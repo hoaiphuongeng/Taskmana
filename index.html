@@ -1731,6 +1731,9 @@
                                     Cập nhật
                                 </button>
                                 ${isAdmin ? `
+                                <button onclick="openTaskModal('${t.id}')" class="p-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs transition-all shadow-xs" title="Sửa công việc">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
                                 <button onclick="deleteTask('${t.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-xs transition-all shadow-xs" title="Xóa công việc">
                                     <i class="fa-solid fa-trash"></i>
                                 </button>` : ''}
@@ -1755,40 +1758,123 @@
         }
         function closeStaffUpdateModal() { document.getElementById('modal-staff-update').classList.add('hidden'); }
 
+        // --- HÀM CẬP NHẬT TIẾN ĐỘ CỦA NHÂN VIÊN (ĐÃ BỔ SUNG sendNotification) ---
         async function handleSaveStaffUpdate(e) {
             e.preventDefault();
             const taskId = document.getElementById('staff-task-id').value;
             const status = document.getElementById('staff-status-select').value;
             const progress = parseInt(document.getElementById('staff-progress-range').value);
-            const note = document.getElementById('staff-note-input').value;
+            const note = document.getElementById('staff-note-input').value.trim();
 
-            await db.collection('tasks').doc(taskId).update({ status, progress, note });
-            await addLog(`Cập nhật tiến độ công việc ID: ${taskId}`);
+            const task = cloudTasks.find(t => t.id === taskId);
+            if (!task) return;
+
+            const updaterName = currentUser ? (currentUser.nickname || currentUser.name) : 'Nhân viên';
+
+            // Cập nhật dữ liệu vào Firestore
+            await db.collection('tasks').doc(taskId).update({ 
+                status, 
+                progress, 
+                note,
+                updatedAt: Date.now()
+            });
+
+            // 🔔 GỬI THÔNG BÁO ĐẾN TÀI KHOẢN ADMIN/TỐI CAO (shp)
+            const adminNotifMsg = `${updaterName} đã cập nhật tiến độ công việc "${task.title}": Trạng thái [${status}], Tiến độ [${progress}%].` + (note ? ` Ghi chú: "${note}"` : '');
+            
+            // Gửi thông báo cho Tài khoản Quản trị tối cao (shp)
+            await sendNotification('shp', `Cập nhật tiến độ: ${task.title}`, adminNotifMsg);
+
+            // Gửi thông báo cho Người tạo/Giao việc (nếu khác tài khoản 'shp' và khác người cập nhật)
+            if (task.creatorId && task.creatorId !== 'shp' && task.creatorId !== currentUser?.id) {
+                await sendNotification(task.creatorId, `Tiến độ công việc: ${task.title}`, adminNotifMsg);
+            }
+
+            await addLog(`Cập nhật tiến độ công việc: ${task.title} (${progress}%)`);
             closeStaffUpdateModal();
-            showToast('Cập nhật thành công!');
+            showToast('Cập nhật tiến độ thành công và đã báo cáo cho Admin!');
         }
 
-        function openTaskModal() {
+        // --- BỔ SUNG & CẬP NHẬT HÀM MỞ MODAL GIAO VIỆC ---
+        function openTaskModal(taskId = null) {
             document.getElementById('form-task').reset();
+            document.getElementById('task-id').value = '';
+            document.getElementById('modal-task-title').innerText = 'Giao Việc Mới';
+            
+            if (taskId) {
+                const task = cloudTasks.find(t => t.id === taskId);
+                if (task) {
+                    document.getElementById('modal-task-title').innerText = 'Chỉnh Sửa Công Việc';
+                    document.getElementById('task-id').value = task.id;
+                    document.getElementById('task-title-input').value = task.title || '';
+                    document.getElementById('task-desc-input').value = task.description || '';
+                    document.getElementById('task-assignee-input').value = task.assigneeId || '';
+                    document.getElementById('task-deadline-input').value = task.deadline || '';
+                }
+            }
             document.getElementById('modal-task').classList.remove('hidden');
         }
-        function closeTaskModal() { document.getElementById('modal-task').classList.add('hidden'); }
 
+        function closeTaskModal() { 
+            document.getElementById('modal-task').classList.add('hidden'); 
+        }
+
+        // --- HÀM TẠO / SỬA CÔNG VIỆC (ĐÃ BỔ SUNG sendNotification) ---
         async function handleSaveTask(e) {
             e.preventDefault();
-            const title = document.getElementById('task-title-input').value;
-            const description = document.getElementById('task-desc-input').value;
+            const taskId = document.getElementById('task-id').value;
+            const title = document.getElementById('task-title-input').value.trim();
+            const description = document.getElementById('task-desc-input').value.trim();
             const assigneeId = document.getElementById('task-assignee-input').value;
             const deadline = document.getElementById('task-deadline-input').value;
 
-            await db.collection('tasks').add({
-                title, description, assigneeId, deadline,
-                status: 'Chưa Thực Hiện', progress: 0, createdAt: new Date().toISOString().split('T')[0]
-            });
+            const creatorName = currentUser ? (currentUser.nickname || currentUser.name) : 'Admin';
 
-            await addLog(`Tạo công việc mới: ${title}`);
+            if (taskId) {
+                // Cập nhật công việc sẵn có
+                await db.collection('tasks').doc(taskId).update({
+                    title, 
+                    description, 
+                    assigneeId, 
+                    deadline,
+                    updatedAt: Date.now()
+                });
+
+                // 🔔 Gửi thông báo đến người thực hiện công việc
+                await sendNotification(
+                    assigneeId,
+                    "Cập nhật thông tin công việc",
+                    `Công việc "${title}" đã được điều chỉnh bởi ${creatorName}. Hạn chót: ${deadline}.`
+                );
+
+                await addLog(`Cập nhật công việc: ${title}`);
+                showToast('Cập nhật công việc thành công!');
+            } else {
+                // Tạo công việc mới
+                await db.collection('tasks').add({
+                    title, 
+                    description, 
+                    assigneeId, 
+                    deadline,
+                    status: 'Chưa Thực Hiện', 
+                    progress: 0, 
+                    creatorId: currentUser ? currentUser.id : 'shp',
+                    createdAt: new Date().toISOString().split('T')[0],
+                    timestamp: Date.now()
+                });
+
+                // 🔔 GỬI THÔNG BÁO ĐẾN NHÂN VIÊN ĐƯỢC GIAO VIỆC
+                await sendNotification(
+                    assigneeId,
+                    "Bạn có công việc mới được giao!",
+                    `${creatorName} đã giao cho bạn công việc: "${title}". Hạn chót: ${deadline}.`
+                );
+
+                await addLog(`Tạo và giao công việc mới: ${title}`);
+                showToast('Giao việc thành công và đã gửi thông báo!');
+            }
+
             closeTaskModal();
-            showToast('Thêm công việc thành công!');
         }
 
         async function deleteTask(id) {
