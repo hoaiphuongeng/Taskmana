@@ -129,7 +129,7 @@
             <!-- Mobile Sidebar Overlay Backdrop -->
             <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-900/50 z-40 lg:hidden hidden backdrop-blur-xs"></div>
 
-            <!-- Sidebar (Responsive Drawer for Mobile & Fixed for Desktop) -->
+            <!-- Sidebar -->
             <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col border-r border-slate-800 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300">
                 <div class="p-4 sm:p-5 flex items-center justify-between border-b border-slate-800">
                     <div class="flex items-center space-x-3">
@@ -414,7 +414,6 @@
                             </h3>
                             <p class="text-xs text-slate-500 mb-6">Cập nhật hồ sơ cá nhân, email, số điện thoại, biệt danh và ảnh đại diện của bạn.</p>
 
-                            <!-- BỔ SUNG: NÚT KÍCH HOẠT THÔNG BÁO ĐẨY TẠI CÀI ĐẶT CÁ NHÂN -->
                             <div class="mb-6 p-4 bg-indigo-50/70 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
                                 <div class="flex items-center space-x-3">
                                     <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-lg shadow-sm">
@@ -534,7 +533,7 @@
                                             <th class="py-3.5 px-3 sm:px-4 w-1/6">Người thực hiện</th>
                                             <th class="py-3.5 px-3 sm:px-4 w-1/6">Trạng thái</th>
                                             <th class="py-3.5 px-3 sm:px-4 w-1/6">Tiến độ</th>
-                                            <th class="py-3.5 px-3 sm:px-4 w-1/6">Deadline</th>
+                                            <th class="py-3.5 px-3 sm:px-4 w-1/6">Thời gian thực hiện</th>
                                             <th class="py-3.5 px-4 sm:px-6 text-right w-1/6">Thao tác</th>
                                         </tr>
                                     </thead>
@@ -620,7 +619,6 @@
                         <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
                             <h3 class="text-sm sm:text-base font-bold text-slate-800">Hộp Thư Thông Báo Của Bạn</h3>
                             <div class="flex items-center space-x-2 w-full sm:w-auto">
-                                <!-- BỔ SUNG: NÚT KÍCH HOẠT THÔNG BÁO TẠI HỘP THƯ THÔNG BÁO -->
                                 <button onclick="requestDeviceNotification()" class="w-full sm:w-auto px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-xl transition-all shadow-xs flex items-center justify-center space-x-1">
                                     <i class="fa-solid fa-mobile-screen-button"></i>
                                     <span>Bật Thông Báo Điện Thoại</span>
@@ -752,56 +750,56 @@
         </div>
     </div>
 
-    <!-- MODAL GIAO VIỆC (ADMIN) -->
-<div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-            <h3 id="modal-task-title" class="text-base sm:text-lg font-bold text-slate-800">Giao Việc Mới</h3>
-            <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
-        </div>
-        <form id="form-task" onsubmit="handleSaveTask(event)" class="p-4 sm:p-6 space-y-4">
-            <input type="hidden" id="task-id">
-            <div>
-                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tiêu đề công việc</label>
-                <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+    <!-- MODAL GIAO VIỆC (ADMIN) - ĐÃ CÓ START DATE & TÌM KIẾM THÔNG MINH -->
+    <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                <h3 id="modal-task-title" class="text-base sm:text-lg font-bold text-slate-800">Giao Việc Mới</h3>
+                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <div>
-                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Mô tả chi tiết</label>
-                <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
-            </div>
-            
-            <!-- CHỌN NGÀY BẮT ĐẦU VÀ DEADLINE -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <form id="form-task" onsubmit="handleSaveTask(event)" class="p-4 sm:p-6 space-y-4">
+                <input type="hidden" id="task-id">
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Ngày bắt đầu</label>
-                    <input type="date" id="task-start-date-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tiêu đề công việc</label>
+                    <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
                 </div>
                 <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Hạn chót (Deadline)</label>
-                    <input type="date" id="task-deadline-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Mô tả chi tiết</label>
+                    <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                 </div>
-            </div>
+                
+                <!-- CHỌN NGÀY BẮT ĐẦU VÀ DEADLINE -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Ngày bắt đầu</label>
+                        <input type="date" id="task-start-date-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Hạn chót (Deadline)</label>
+                        <input type="date" id="task-deadline-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    </div>
+                </div>
 
-            <!-- TÌM KIẾM THÔNG MINH NGƯỜI THỰC HIỆN -->
-            <div class="relative">
-                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Người thực hiện</label>
-                <input type="hidden" id="task-assignee-input" required>
+                <!-- TÌM KIẾM THÔNG MINH NGƯỜI THỰC HIỆN -->
                 <div class="relative">
-                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search"></i></span>
-                    <input type="text" id="task-assignee-search" placeholder="Gõ tên hoặc SĐT để tìm nhân sự..." autocomplete="off" oninput="handleAssigneeSearchInput(this.value)" onfocus="showAssigneeDropdown()" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
-                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 cursor-pointer" onclick="toggleAssigneeDropdown()"><i class="fa-solid fa-chevron-down text-xs"></i></span>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Người thực hiện</label>
+                    <input type="hidden" id="task-assignee-input" required>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search"></i></span>
+                        <input type="text" id="task-assignee-search" placeholder="Gõ tên hoặc SĐT để tìm nhân sự..." autocomplete="off" oninput="handleAssigneeSearchInput(this.value)" onfocus="showAssigneeDropdown()" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                        <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 cursor-pointer" onclick="toggleAssigneeDropdown()"><i class="fa-solid fa-chevron-down text-xs"></i></span>
+                    </div>
+                    <!-- Dropdown kết quả gợi ý -->
+                    <div id="assignee-dropdown-list" class="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
                 </div>
-                <!-- Dropdown kết quả gợi ý -->
-                <div id="assignee-dropdown-list" class="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
-            </div>
 
-            <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
-                <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">Hủy</button>
-                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md transition-all">Lưu Công Việc</button>
-            </div>
-        </form>
+                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">Hủy</button>
+                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md transition-all">Lưu Công Việc</button>
+                </div>
+            </form>
+        </div>
     </div>
-</div>
 
     <!-- MODAL THÊM / SỬA THÀNH VIÊN -->
     <div id="modal-user" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
@@ -918,6 +916,7 @@
         let trendChartInstance = null;
         let scheduleViewMode = 'day'; 
         let taskFutureViewMode = 'day';
+        let selectedAssigneeId = '';
 
         const defaultUsers = [
             { id: 'shp', name: 'Sơn Hoài Phương', phone: 'shp', password: '123', role: 'ADMIN', status: 'ACTIVE', email: 'shp@company.com', nickname: 'SuperAdmin', avatar: '', order: 0 },
@@ -992,7 +991,6 @@
             setTimeout(() => toast.remove(), 3000);
         }
 
-        /* BỔ SUNG: HÀM YÊU CẦU QUYỀN VÀ LẤY FCM TOKEN THIẾT BỊ */
         async function requestDeviceNotification() {
             if (!('Notification' in window)) {
                 showToast('Trình duyệt này không hỗ trợ thông báo đẩy!', true);
@@ -1006,11 +1004,8 @@
                     
                     if (firebase.messaging.isSupported()) {
                         const messaging = firebase.messaging();
-                        
-                        // Lấy token (sử dụng VAPID Key của dự án taskmana-shp)
                         const token = await messaging.getToken();
                         if (token) {
-                            console.log('Thiết bị FCM Token:', token);
                             if (currentUser) {
                                 await db.collection('users').doc(currentUser.id).update({
                                     fcmToken: token,
@@ -1018,17 +1013,12 @@
                                 });
                                 showToast('Đã lưu token thông báo đẩy vào tài khoản!');
                             }
-                        } else {
-                            console.warn('Không thể lấy FCM Token.');
                         }
-                    } else {
-                        showToast('Thiết bị/Trình duyệt chưa hỗ trợ Firebase Messaging.', true);
                     }
                 } else if (permission === 'denied') {
                     showToast('Bạn đã từ chối quyền nhận thông báo.', true);
                 }
             } catch (err) {
-                console.error('Lỗi khi xin quyền thông báo:', err);
                 showToast('Lỗi kích hoạt thông báo đẩy!', true);
             }
         }
@@ -1127,7 +1117,6 @@
             if (saved) {
                 try {
                     currentUser = JSON.parse(saved);
-                    
                     let existUser = cloudUsers.find(u => u.id === currentUser.id);
                     if (currentUser.id !== 'shp') {
                         if (!existUser || existUser.status === 'INACTIVE') {
@@ -1312,7 +1301,6 @@
             showToast('Đánh dấu tất cả đã đọc thành công.');
         }
 
-        // --- CÀI ĐẶT CÁ NHÂN ---
         function loadProfileSettings() {
             if (!currentUser) return;
             document.getElementById('profile-name-input').value = currentUser.name || '';
@@ -1365,15 +1353,12 @@
 
             try {
                 await db.collection('users').doc(currentUser.id).update(updateData);
-                
                 currentUser = { ...currentUser, ...updateData };
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-                
                 updateUserSidebarUI();
                 await addLog(`Cập nhật thông tin tài khoản cá nhân`);
                 showToast('Cập nhật hồ sơ thành công!');
             } catch (err) {
-                console.error(err);
                 showToast('Lỗi khi cập nhật hồ sơ!', true);
             }
         }
@@ -1384,10 +1369,11 @@
 
             return tasks.filter(t => {
                 const deadline = t.deadline || '';
+                const startDate = t.startDate || '';
                 const createdAt = t.createdAt || '';
 
                 if (filterType === 'today') {
-                    return deadline === todayStr || createdAt === todayStr;
+                    return (startDate && startDate <= todayStr && deadline >= todayStr) || deadline === todayStr || createdAt === todayStr;
                 }
                 if (filterType === 'week') {
                     const day = now.getDay();
@@ -1656,12 +1642,6 @@
         }
 
         function populateAssignees() {
-            const selModal = document.getElementById('task-assignee-input');
-            if (selModal) {
-                let htmlModal = '';
-                cloudUsers.forEach(u => htmlModal += `<option value="${u.id}">${u.name}</option>`);
-                selModal.innerHTML = htmlModal;
-            }
             const selFilter = document.getElementById('task-filter-assignee');
             if (selFilter) {
                 let htmlFilter = '<option value="">Tất cả nhân sự</option>';
@@ -1676,6 +1656,78 @@
                 });
                 swapTarget.innerHTML = htmlSwap;
             }
+        }
+
+        // --- CÁC HÀM XỬ LÝ TÌM KIẾM THÔNG MINH NHÂN SỰ TRONG MODAL GIAO VIỆC ---
+        function showAssigneeDropdown() {
+            renderAssigneeDropdownOptions(cloudUsers);
+        }
+
+        function hideAssigneeDropdown() {
+            setTimeout(() => {
+                const dropdown = document.getElementById('assignee-dropdown-list');
+                if (dropdown) dropdown.classList.add('hidden');
+            }, 200);
+        }
+
+        function toggleAssigneeDropdown() {
+            const dropdown = document.getElementById('assignee-dropdown-list');
+            if (!dropdown) return;
+            if (dropdown.classList.contains('hidden')) {
+                renderAssigneeDropdownOptions(cloudUsers);
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function handleAssigneeSearchInput(keyword) {
+            const query = keyword.toLowerCase().trim();
+            const filtered = cloudUsers.filter(u => 
+                u.name.toLowerCase().includes(query) || 
+                (u.phone && u.phone.toLowerCase().includes(query)) ||
+                (u.nickname && u.nickname.toLowerCase().includes(query))
+            );
+            renderAssigneeDropdownOptions(filtered);
+            const dropdown = document.getElementById('assignee-dropdown-list');
+            if (dropdown) dropdown.classList.remove('hidden');
+        }
+
+        function renderAssigneeDropdownOptions(usersList) {
+            const dropdown = document.getElementById('assignee-dropdown-list');
+            if (!dropdown) return;
+            
+            if (usersList.length === 0) {
+                dropdown.innerHTML = `<div class="p-3 text-xs text-slate-400 text-center">Không tìm thấy nhân sự phù hợp</div>`;
+                return;
+            }
+
+            let html = '';
+            usersList.forEach(u => {
+                html += `
+                    <div onclick="selectAssigneeItem('${u.id}', '${escapeHtml(u.name)}', '${u.phone || ''}')" class="px-4 py-2.5 hover:bg-indigo-50 cursor-pointer flex items-center justify-between text-xs border-b border-slate-50 last:border-none">
+                        <div class="flex items-center space-x-2">
+                            <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 font-bold flex items-center justify-center text-[10px]">
+                                ${u.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <span class="font-semibold text-slate-800 block">${escapeHtml(u.name)}</span>
+                                <span class="text-[10px] text-slate-400">SĐT: ${escapeHtml(u.phone || '--')}</span>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded">${u.role || 'USER'}</span>
+                    </div>
+                `;
+            });
+            dropdown.innerHTML = html;
+        }
+
+        function selectAssigneeItem(id, name, phone) {
+            selectedAssigneeId = id;
+            document.getElementById('task-assignee-input').value = id;
+            document.getElementById('task-assignee-search').value = `${name} (${phone})`;
+            const dropdown = document.getElementById('assignee-dropdown-list');
+            if (dropdown) dropdown.classList.add('hidden');
         }
 
         function renderTasks() {
@@ -1739,8 +1791,10 @@
                                     <span class="text-[11px] font-semibold text-slate-600">${t.progress || 0}%</span>
                                 </div>
                             </td>
-                            <td class="py-3.5 px-3 sm:px-4 text-xs font-semibold text-slate-700 whitespace-nowrap">
-                                ${t.deadline || '--'}
+                            <!-- HIỂN THỊ NGÀY BẮT ĐẦU VÀ DEADLINE NGOÀI BẢNG -->
+                            <td class="py-3.5 px-3 sm:px-4 text-xs whitespace-nowrap">
+                                <div class="text-indigo-600 font-medium"><i class="fa-regular fa-calendar text-[10px] mr-1"></i> Từ: ${t.startDate || '--/--/----'}</div>
+                                <div class="text-rose-600 font-medium"><i class="fa-regular fa-calendar-xmark text-[10px] mr-1"></i> Đến: ${t.deadline || '--/--/----'}</div>
                             </td>
                             <td class="py-3.5 px-4 sm:px-6 text-right space-x-1 whitespace-nowrap">
                                 <button onclick="openStaffUpdateModal('${t.id}')" class="px-2.5 sm:px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-600 rounded-lg text-xs font-semibold transition-all shadow-xs" title="Cập nhật tiến độ">
@@ -1774,7 +1828,6 @@
         }
         function closeStaffUpdateModal() { document.getElementById('modal-staff-update').classList.add('hidden'); }
 
-        // --- HÀM CẬP NHẬT TIẾN ĐỘ CỦA NHÂN VIÊN (ĐÃ BỔ SUNG sendNotification) ---
         async function handleSaveStaffUpdate(e) {
             e.preventDefault();
             const taskId = document.getElementById('staff-task-id').value;
@@ -1787,7 +1840,6 @@
 
             const updaterName = currentUser ? (currentUser.nickname || currentUser.name) : 'Nhân viên';
 
-            // Cập nhật dữ liệu vào Firestore
             await db.collection('tasks').doc(taskId).update({ 
                 status, 
                 progress, 
@@ -1795,13 +1847,10 @@
                 updatedAt: Date.now()
             });
 
-            // 🔔 GỬI THÔNG BÁO ĐẾN TÀI KHOẢN ADMIN/TỐI CAO (shp)
             const adminNotifMsg = `${updaterName} đã cập nhật tiến độ công việc "${task.title}": Trạng thái [${status}], Tiến độ [${progress}%].` + (note ? ` Ghi chú: "${note}"` : '');
             
-            // Gửi thông báo cho Tài khoản Quản trị tối cao (shp)
             await sendNotification('shp', `Cập nhật tiến độ: ${task.title}`, adminNotifMsg);
 
-            // Gửi thông báo cho Người tạo/Giao việc (nếu khác tài khoản 'shp' và khác người cập nhật)
             if (task.creatorId && task.creatorId !== 'shp' && task.creatorId !== currentUser?.id) {
                 await sendNotification(task.creatorId, `Tiến độ công việc: ${task.title}`, adminNotifMsg);
             }
@@ -1811,10 +1860,17 @@
             showToast('Cập nhật tiến độ thành công và đã báo cáo cho Admin!');
         }
 
-        // --- BỔ SUNG & CẬP NHẬT HÀM MỞ MODAL GIAO VIỆC ---
         function openTaskModal(taskId = null) {
             document.getElementById('form-task').reset();
             document.getElementById('task-id').value = '';
+            selectedAssigneeId = '';
+            document.getElementById('task-assignee-input').value = '';
+            document.getElementById('task-assignee-search').value = '';
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const startDateInput = document.getElementById('task-start-date-input');
+            if (startDateInput) startDateInput.value = todayStr;
+
             document.getElementById('modal-task-title').innerText = 'Giao Việc Mới';
             
             if (taskId) {
@@ -1824,8 +1880,17 @@
                     document.getElementById('task-id').value = task.id;
                     document.getElementById('task-title-input').value = task.title || '';
                     document.getElementById('task-desc-input').value = task.description || '';
-                    document.getElementById('task-assignee-input').value = task.assigneeId || '';
+                    if (startDateInput) startDateInput.value = task.startDate || todayStr;
                     document.getElementById('task-deadline-input').value = task.deadline || '';
+                    
+                    if (task.assigneeId) {
+                        const u = cloudUsers.find(user => user.id === task.assigneeId);
+                        if (u) {
+                            selectedAssigneeId = u.id;
+                            document.getElementById('task-assignee-input').value = u.id;
+                            document.getElementById('task-assignee-search').value = `${u.name} (${u.phone || ''})`;
+                        }
+                    }
                 }
             }
             document.getElementById('modal-task').classList.remove('hidden');
@@ -1833,44 +1898,54 @@
 
         function closeTaskModal() { 
             document.getElementById('modal-task').classList.add('hidden'); 
+            hideAssigneeDropdown();
         }
 
-        // --- HÀM TẠO / SỬA CÔNG VIỆC (ĐÃ BỔ SUNG sendNotification) ---
         async function handleSaveTask(e) {
             e.preventDefault();
             const taskId = document.getElementById('task-id').value;
             const title = document.getElementById('task-title-input').value.trim();
             const description = document.getElementById('task-desc-input').value.trim();
             const assigneeId = document.getElementById('task-assignee-input').value;
+            const startDate = document.getElementById('task-start-date-input').value;
             const deadline = document.getElementById('task-deadline-input').value;
 
             const creatorName = currentUser ? (currentUser.nickname || currentUser.name) : 'Admin';
 
+            if (!assigneeId) {
+                showToast('Vui lòng chọn người thực hiện hợp lệ từ danh sách!', true);
+                return;
+            }
+
+            if (startDate > deadline) {
+                showToast('Ngày bắt đầu không được lớn hơn Hạn chót (Deadline)!', true);
+                return;
+            }
+
             if (taskId) {
-                // Cập nhật công việc sẵn có
                 await db.collection('tasks').doc(taskId).update({
                     title, 
                     description, 
                     assigneeId, 
+                    startDate,
                     deadline,
                     updatedAt: Date.now()
                 });
 
-                // 🔔 Gửi thông báo đến người thực hiện công việc
                 await sendNotification(
                     assigneeId,
                     "Cập nhật thông tin công việc",
-                    `Công việc "${title}" đã được điều chỉnh bởi ${creatorName}. Hạn chót: ${deadline}.`
+                    `Công việc "${title}" đã được điều chỉnh. Từ ${startDate} đến ${deadline}.`
                 );
 
                 await addLog(`Cập nhật công việc: ${title}`);
                 showToast('Cập nhật công việc thành công!');
             } else {
-                // Tạo công việc mới
                 await db.collection('tasks').add({
                     title, 
                     description, 
                     assigneeId, 
+                    startDate,
                     deadline,
                     status: 'Chưa Thực Hiện', 
                     progress: 0, 
@@ -1879,11 +1954,10 @@
                     timestamp: Date.now()
                 });
 
-                // 🔔 GỬI THÔNG BÁO ĐẾN NHÂN VIÊN ĐƯỢC GIAO VIỆC
                 await sendNotification(
                     assigneeId,
                     "Bạn có công việc mới được giao!",
-                    `${creatorName} đã giao cho bạn công việc: "${title}". Hạn chót: ${deadline}.`
+                    `${creatorName} đã giao công việc: "${title}". Thời gian từ ${startDate} đến ${deadline}.`
                 );
 
                 await addLog(`Tạo và giao công việc mới: ${title}`);
@@ -1891,6 +1965,7 @@
             }
 
             closeTaskModal();
+            renderTasks();
         }
 
         async function deleteTask(id) {
@@ -2136,7 +2211,6 @@
                         showToast(`Cập nhật thành công lịch phân ca từ ${dateKeys[0].dateKey} đến ${dateKeys[dateKeys.length - 1].dateKey}!`);
                     }
                 } catch (err) { 
-                    console.error(err);
                     showToast("Lỗi khi đọc file Excel phân ca!", true); 
                 }
                 e.target.value = '';
@@ -2510,7 +2584,6 @@
                 await addLog(`Xóa thành viên ID: ${userId}`);
                 showToast('Đã xóa thành công tài khoản.');
             } catch (err) {
-                console.error(err);
                 showToast('Lỗi khi xóa tài khoản!', true);
             }
         }
@@ -2550,8 +2623,8 @@
         }
 
         function exportDataExcel() {
-            let csv = "\uFEFFID,Tiêu đề,Trạng thái,Tiến độ (%),Deadline\n";
-            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.status},${t.progress || 0},${t.deadline}\n`);
+            let csv = "\uFEFFID,Tiêu đề,Trạng thái,Tiến độ (%),Ngày bắt đầu,Deadline\n";
+            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.status},${t.progress || 0},${t.startDate || ''},${t.deadline || ''}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
