@@ -753,39 +753,55 @@
     </div>
 
     <!-- MODAL GIAO VIỆC (ADMIN) -->
-    <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
-            <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
-                <h3 id="modal-task-title" class="text-base sm:text-lg font-bold text-slate-800">Giao Việc Mới</h3>
-                <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="form-task" onsubmit="handleSaveTask(event)" class="p-4 sm:p-6 space-y-4">
-                <input type="hidden" id="task-id">
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tiêu đề công việc</label>
-                    <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Mô tả chi tiết</label>
-                    <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm"></textarea>
-                </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Người thực hiện</label>
-                        <select id="task-assignee-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Deadline</label>
-                        <input type="date" id="task-deadline-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm">
-                    </div>
-                </div>
-                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
-                    <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">Hủy</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 text-white text-xs sm:text-sm font-semibold rounded-xl">Lưu Công Việc</button>
-                </div>
-            </form>
+<div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
+        <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <h3 id="modal-task-title" class="text-base sm:text-lg font-bold text-slate-800">Giao Việc Mới</h3>
+            <button onclick="closeTaskModal()" class="text-slate-400 hover:text-slate-600 text-lg"><i class="fa-solid fa-xmark"></i></button>
         </div>
+        <form id="form-task" onsubmit="handleSaveTask(event)" class="p-4 sm:p-6 space-y-4">
+            <input type="hidden" id="task-id">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Tiêu đề công việc</label>
+                <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Mô tả chi tiết</label>
+                <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+            
+            <!-- CHỌN NGÀY BẮT ĐẦU VÀ DEADLINE -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Ngày bắt đầu</label>
+                    <input type="date" id="task-start-date-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Hạn chót (Deadline)</label>
+                    <input type="date" id="task-deadline-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+
+            <!-- TÌM KIẾM THÔNG MINH NGƯỜI THỰC HIỆN -->
+            <div class="relative">
+                <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Người thực hiện</label>
+                <input type="hidden" id="task-assignee-input" required>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400"><i class="fa-solid fa-search"></i></span>
+                    <input type="text" id="task-assignee-search" placeholder="Gõ tên hoặc SĐT để tìm nhân sự..." autocomplete="off" oninput="handleAssigneeSearchInput(this.value)" onfocus="showAssigneeDropdown()" class="w-full pl-10 pr-10 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <span class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 cursor-pointer" onclick="toggleAssigneeDropdown()"><i class="fa-solid fa-chevron-down text-xs"></i></span>
+                </div>
+                <!-- Dropdown kết quả gợi ý -->
+                <div id="assignee-dropdown-list" class="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
+            </div>
+
+            <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-100">
+                <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl border border-slate-200 text-xs sm:text-sm">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs sm:text-sm font-semibold rounded-xl shadow-md transition-all">Lưu Công Việc</button>
+            </div>
+        </form>
     </div>
+</div>
 
     <!-- MODAL THÊM / SỬA THÀNH VIÊN -->
     <div id="modal-user" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
