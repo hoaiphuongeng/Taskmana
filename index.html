@@ -945,75 +945,82 @@
             if(elem) elem.innerText = timeStr;
         }
 
-        // REALTIME CLOUD LISTENERS
         function setupRealtimeListeners() {
-            showLoading(true);
+    showLoading(true);
 
-            // 1. Users
-            USERS_COL.onSnapshot(snap => {
-                usersData = [];
-                snap.forEach(doc => usersData.push({ id: doc.id, ...doc.data() }));
-                
-                // Seed Admin Default nếu rỗng
-                if (usersData.length === 0) {
-                    seedInitialData();
-                }
+    // Timeout dự phòng 5 giây để ép tắt loading nếu mạng chậm/lỗi kết nối Firebase
+    const safetyTimeout = setTimeout(() => {
+        showLoading(false);
+    }, 5000);
 
-                // Update current user data nếu có thay đổi
-                if (currentUser) {
-                    const freshUser = usersData.find(u => u.id === currentUser.id);
-                    if (freshUser) {
-                        currentUser = freshUser;
-                        localStorage.setItem('taskmana_current_user', JSON.stringify(currentUser));
-                        updateProfileUI();
-                    }
-                }
-
-                populateAssigneeDropdowns();
-                renderUsers();
-                if(currentTab === 'dashboard') renderDashboard();
-            }, err => console.error("Users error:", err));
-
-            // 2. Tasks
-            TASKS_COL.onSnapshot(snap => {
-                tasksData = [];
-                snap.forEach(doc => tasksData.push({ id: doc.id, ...doc.data() }));
-                renderTasks();
-                if(currentTab === 'dashboard') renderDashboard();
-                showLoading(false);
-            }, err => console.error("Tasks error:", err));
-
-            // 3. Shifts
-            SHIFTS_COL.onSnapshot(snap => {
-                shiftsData = [];
-                snap.forEach(doc => shiftsData.push({ id: doc.id, ...doc.data() }));
-                if(currentTab === 'schedule') renderSchedule();
-            }, err => console.error("Shifts error:", err));
-
-            // 4. Swaps
-            SWAPS_COL.onSnapshot(snap => {
-                swapsData = [];
-                snap.forEach(doc => swapsData.push({ id: doc.id, ...doc.data() }));
-                renderSwaps();
-                updateShiftSwapBadge();
-            }, err => console.error("Swaps error:", err));
-
-            // 5. Notifications
-            NOTIFS_COL.onSnapshot(snap => {
-                notifsData = [];
-                snap.forEach(doc => notifsData.push({ id: doc.id, ...doc.data() }));
-                renderNotifications();
-                updateNotifBadge();
-            }, err => console.error("Notifs error:", err));
-
-            // 6. Logs
-            LOGS_COL.onSnapshot(snap => {
-                logsData = [];
-                snap.forEach(doc => logsData.push({ id: doc.id, ...doc.data() }));
-                logsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-                renderLogs();
-            }, err => console.error("Logs error:", err));
+    // 1. Users
+    USERS_COL.onSnapshot(snap => {
+        usersData = [];
+        snap.forEach(doc => usersData.push({ id: doc.id, ...doc.data() }));
+        if (usersData.length === 0) {
+            seedInitialData();
         }
+        if (currentUser) {
+            const freshUser = usersData.find(u => u.id === currentUser.id);
+            if (freshUser) {
+                currentUser = freshUser;
+                localStorage.setItem('taskmana_current_user', JSON.stringify(currentUser));
+                updateProfileUI();
+            }
+        }
+        populateAssigneeDropdowns();
+        renderUsers();
+        if(currentTab === 'dashboard') renderDashboard();
+    }, err => {
+        console.error("Users error:", err);
+        showLoading(false);
+    });
+
+    // 2. Tasks
+    TASKS_COL.onSnapshot(snap => {
+        tasksData = [];
+        snap.forEach(doc => tasksData.push({ id: doc.id, ...doc.data() }));
+        renderTasks();
+        if(currentTab === 'dashboard') renderDashboard();
+        clearTimeout(safetyTimeout);
+        showLoading(false);
+    }, err => {
+        console.error("Tasks error:", err);
+        clearTimeout(safetyTimeout);
+        showLoading(false);
+    });
+
+    // 3. Shifts
+    SHIFTS_COL.onSnapshot(snap => {
+        shiftsData = [];
+        snap.forEach(doc => shiftsData.push({ id: doc.id, ...doc.data() }));
+        if(currentTab === 'schedule') renderSchedule();
+    }, err => console.error("Shifts error:", err));
+
+    // 4. Swaps
+    SWAPS_COL.onSnapshot(snap => {
+        swapsData = [];
+        snap.forEach(doc => swapsData.push({ id: doc.id, ...doc.data() }));
+        renderSwaps();
+        updateShiftSwapBadge();
+    }, err => console.error("Swaps error:", err));
+
+    // 5. Notifications
+    NOTIFS_COL.onSnapshot(snap => {
+        notifsData = [];
+        snap.forEach(doc => notifsData.push({ id: doc.id, ...doc.data() }));
+        renderNotifications();
+        updateNotifBadge();
+    }, err => console.error("Notifs error:", err));
+
+    // 6. Logs
+    LOGS_COL.onSnapshot(snap => {
+        logsData = [];
+        snap.forEach(doc => logsData.push({ id: doc.id, ...doc.data() }));
+        logsData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        renderLogs();
+    }, err => console.error("Logs error:", err));
+}
 
         async function seedInitialData() {
             const defaultAdmin = {
