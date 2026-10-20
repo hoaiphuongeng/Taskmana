@@ -908,18 +908,24 @@
             // Listeners Realtime Cloud Data
             setupRealtimeListeners();
 
-            // Check Saved Login Session
-            const savedUser = localStorage.getItem('taskmana_current_user');
-            if (savedUser) {
-                try {
-                    currentUser = JSON.parse(savedUser);
-                    showMainView();
-                } catch(e) {
-                    showAuthView();
-                }
-            } else {
-                showAuthView();
-            }
+           // Check Saved Login Session
+const savedUser = localStorage.getItem('taskmana_current_user');
+if (savedUser) {
+    try {
+        currentUser = JSON.parse(savedUser);
+        if (currentUser && currentUser.id) {
+            showMainView();
+        } else {
+            throw new Error("Invalid user object");
+        }
+    } catch(e) {
+        localStorage.removeItem('taskmana_current_user');
+        currentUser = null;
+        showAuthView();
+    }
+} else {
+    showAuthView();
+}
 
             // Setup Search Filter Events
             const searchInput = document.getElementById('task-search');
