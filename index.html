@@ -750,7 +750,7 @@
         </div>
     </div>
 
-    <!-- MODAL GIAO VIỆC (ADMIN) - ĐÃ CÓ START DATE & TÌM KIẾM THÔNG MINH -->
+    <!-- MODAL GIAO VIỆC (ADMIN) - BỔ SUNG CẤP ĐỘ ƯU TIÊN -->
     <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 hidden">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-slate-200">
             <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
@@ -768,6 +768,15 @@
                     <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
                 </div>
                 
+                <!-- BỔ SUNG: CHỌN CẤP ĐỘ ƯU TIÊN (Normal / Urgent) -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase text-slate-500 mb-1">Cấp độ ưu tiên</label>
+                    <select id="task-priority-input" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold">
+                        <option value="Normal">Normal (Bình thường)</option>
+                        <option value="Urgent">Urgent (Khẩn cấp)</option>
+                    </select>
+                </div>
+
                 <!-- CHỌN NGÀY BẮT ĐẦU VÀ DEADLINE -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
@@ -1658,7 +1667,6 @@
             }
         }
 
-        // --- CÁC HÀM XỬ LÝ TÌM KIẾM THÔNG MINH NHÂN SỰ TRONG MODAL GIAO VIỆC ---
         function showAssigneeDropdown() {
             renderAssigneeDropdownOptions(cloudUsers);
         }
@@ -1764,11 +1772,20 @@
                     if (t.status === 'Đã Hoàn Thành') badgeColor = 'bg-emerald-50 text-emerald-700 border border-emerald-200';
                     if (t.status === 'Huỷ') badgeColor = 'bg-rose-50 text-rose-700 border border-rose-200';
 
+                    // HIỂN THỊ CẤP ĐỘ ƯU TIÊN (Normal: Xanh dương/xanh lá, Urgent: Đỏ)
+                    let priorityBadge = '';
+                    if (t.priority === 'Urgent') {
+                        priorityBadge = `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-rose-600 text-white mb-1 shadow-xs animate-pulse"><i class="fa-solid fa-fire mr-1"></i>Urgent</span>`;
+                    } else {
+                        priorityBadge = `<span class="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white mb-1 shadow-xs"><i class="fa-solid fa-shield mr-1"></i>Normal</span>`;
+                    }
+
                     const isAdmin = currentUser && currentUser.role === 'ADMIN';
 
                     html += `
                         <tr class="hover:bg-slate-50 transition-colors">
                             <td class="py-3.5 px-4 sm:px-6">
+                                ${priorityBadge}
                                 <span class="font-semibold text-slate-900 block">${escapeHtml(t.title)}</span>
                                 <span class="text-[11px] text-slate-500 line-clamp-1">${escapeHtml(t.description || 'Không có mô tả chi tiết')}</span>
                             </td>
@@ -1791,7 +1808,6 @@
                                     <span class="text-[11px] font-semibold text-slate-600">${t.progress || 0}%</span>
                                 </div>
                             </td>
-                            <!-- HIỂN THỊ NGÀY BẮT ĐẦU VÀ DEADLINE NGOÀI BẢNG -->
                             <td class="py-3.5 px-3 sm:px-4 text-xs whitespace-nowrap">
                                 <div class="text-indigo-600 font-medium"><i class="fa-regular fa-calendar text-[10px] mr-1"></i> Từ: ${t.startDate || '--/--/----'}</div>
                                 <div class="text-rose-600 font-medium"><i class="fa-regular fa-calendar-xmark text-[10px] mr-1"></i> Đến: ${t.deadline || '--/--/----'}</div>
@@ -1871,6 +1887,9 @@
             const startDateInput = document.getElementById('task-start-date-input');
             if (startDateInput) startDateInput.value = todayStr;
 
+            const priorityInput = document.getElementById('task-priority-input');
+            if (priorityInput) priorityInput.value = 'Normal';
+
             document.getElementById('modal-task-title').innerText = 'Giao Việc Mới';
             
             if (taskId) {
@@ -1880,6 +1899,7 @@
                     document.getElementById('task-id').value = task.id;
                     document.getElementById('task-title-input').value = task.title || '';
                     document.getElementById('task-desc-input').value = task.description || '';
+                    if (priorityInput) priorityInput.value = task.priority || 'Normal';
                     if (startDateInput) startDateInput.value = task.startDate || todayStr;
                     document.getElementById('task-deadline-input').value = task.deadline || '';
                     
@@ -1906,6 +1926,7 @@
             const taskId = document.getElementById('task-id').value;
             const title = document.getElementById('task-title-input').value.trim();
             const description = document.getElementById('task-desc-input').value.trim();
+            const priority = document.getElementById('task-priority-input').value;
             const assigneeId = document.getElementById('task-assignee-input').value;
             const startDate = document.getElementById('task-start-date-input').value;
             const deadline = document.getElementById('task-deadline-input').value;
@@ -1926,6 +1947,7 @@
                 await db.collection('tasks').doc(taskId).update({
                     title, 
                     description, 
+                    priority,
                     assigneeId, 
                     startDate,
                     deadline,
@@ -1935,7 +1957,7 @@
                 await sendNotification(
                     assigneeId,
                     "Cập nhật thông tin công việc",
-                    `Công việc "${title}" đã được điều chỉnh. Từ ${startDate} đến ${deadline}.`
+                    `Công việc "${title}" [Ưu tiên: ${priority}] đã được điều chỉnh. Từ ${startDate} đến ${deadline}.`
                 );
 
                 await addLog(`Cập nhật công việc: ${title}`);
@@ -1944,6 +1966,7 @@
                 await db.collection('tasks').add({
                     title, 
                     description, 
+                    priority,
                     assigneeId, 
                     startDate,
                     deadline,
@@ -1957,7 +1980,7 @@
                 await sendNotification(
                     assigneeId,
                     "Bạn có công việc mới được giao!",
-                    `${creatorName} đã giao công việc: "${title}". Thời gian từ ${startDate} đến ${deadline}.`
+                    `${creatorName} đã giao công việc: "${title}" [Ưu tiên: ${priority}]. Thời gian từ ${startDate} đến ${deadline}.`
                 );
 
                 await addLog(`Tạo và giao công việc mới: ${title}`);
@@ -2623,8 +2646,8 @@
         }
 
         function exportDataExcel() {
-            let csv = "\uFEFFID,Tiêu đề,Trạng thái,Tiến độ (%),Ngày bắt đầu,Deadline\n";
-            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.status},${t.progress || 0},${t.startDate || ''},${t.deadline || ''}\n`);
+            let csv = "\uFEFFID,Tiêu đề,Ưu tiên,Trạng thái,Tiến độ (%),Ngày bắt đầu,Deadline\n";
+            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.priority || 'Normal'},${t.status},${t.progress || 0},${t.startDate || ''},${t.deadline || ''}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
