@@ -74,7 +74,6 @@
             background-color: #f2f2f7;
         }
 
-        /* Tăng độ trong suốt cho hiệu ứng kính mờ iOS (Glassmorphism) */
         .ios-glass {
             background: rgba(255, 255, 255, 0.60);
             backdrop-filter: blur(25px);
@@ -83,7 +82,7 @@
         }
         
         .ios-glass-dark {
-            background: rgba(20, 22, 28, 0.75);
+            background: rgba(20, 22, 28, 0.70);
             backdrop-filter: blur(30px);
             -webkit-backdrop-filter: blur(30px);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -97,21 +96,22 @@
             border: 1px solid rgba(255, 255, 255, 0.6);
         }
 
-        /* Hiệu ứng chuyển trang mượt mà, không khóa nhầm sự kiện */
         .tab-content {
-            transition: opacity 250ms ease-in-out;
+            transition: opacity 300ms ease-in-out, transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
             opacity: 1;
+            transform: scale(1);
         }
 
         .tab-content.fade-out {
             opacity: 0;
-            display: none !important;
+            transform: scale(0.98);
+            pointer-events: none;
         }
 
-        /* Custom Scrollbar */
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 100, 100, 0.6); }
         
         .highlight-row { background-color: rgba(254, 243, 199, 0.6) !important; transition: background-color 0.3s ease; }
         .my-account-row { background-color: rgba(224, 231, 255, 0.6) !important; border-left: 4px solid #007aff; }
@@ -119,10 +119,13 @@
         
         .clickable-stat { cursor: pointer; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
         .clickable-stat:active { transform: scale(0.96); }
+        .clickable-stat:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08); }
         
-        #mobile-sidebar { 
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-            z-index: 60;
+        #mobile-sidebar { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+
+        /* Custom style cho Multi-select dropdown */
+        .multi-select-option:hover {
+            background-color: rgba(99, 102, 241, 0.1);
         }
     </style>
 </head>
@@ -139,8 +142,8 @@
         </div>
     </div>
 
-    <!-- Notification Toast Container -->
-    <div id="toast-container" class="fixed top-5 right-4 left-4 sm:left-auto sm:right-6 z-70 flex flex-col space-y-3 pointer-events-none"></div>
+    <!-- Notification Toast Container (Thêm safe area notch top cho iOS) -->
+    <div id="toast-container" class="fixed top-12 right-4 left-4 sm:left-auto sm:right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
 
     <!-- MAIN APP CONTAINER -->
     <div id="app" class="flex-1 flex flex-col h-full overflow-hidden">
@@ -161,14 +164,14 @@
                         <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 ml-1">Số điện thoại hoặc ID</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-user text-sm"></i></span>
-                            <input type="text" id="login-phone" required class="w-full pl-10 pr-4 py-3 bg-white/90 rounded-2xl border border-slate-300/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold text-slate-900 transition-all shadow-xs" placeholder="Nhập SĐT hoặc shp">
+                            <input type="text" id="login-phone" required class="w-full pl-10 pr-4 py-3 bg-white/80 rounded-2xl border border-slate-300/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold text-slate-900 transition-all shadow-xs" placeholder="Nhập SĐT hoặc shp">
                         </div>
                     </div>
                     <div>
                         <label class="block text-[11px] font-bold uppercase tracking-wider text-slate-700 mb-1.5 ml-1">Mật khẩu</label>
                         <div class="relative">
                             <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-lock text-sm"></i></span>
-                            <input type="password" id="login-password" required class="w-full pl-10 pr-4 py-3 bg-white/90 rounded-2xl border border-slate-300/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold text-slate-900 transition-all shadow-xs" placeholder="••••••">
+                            <input type="password" id="login-password" required class="w-full pl-10 pr-4 py-3 bg-white/80 rounded-2xl border border-slate-300/80 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm font-semibold text-slate-900 transition-all shadow-xs" placeholder="••••••">
                         </div>
                     </div>
                     <div class="pt-2">
@@ -184,11 +187,11 @@
         <!-- ==================== VIEW: MAIN APP ==================== -->
         <div id="view-main" class="flex-1 flex h-full overflow-hidden hidden relative">
             
-            <!-- Mobile Sidebar Overlay Backdrop (Được tinh chỉnh z-index để không chặn nhầm sự kiện) -->
-            <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-900/40 z-50 lg:hidden hidden backdrop-blur-xs transition-opacity duration-300"></div>
+            <!-- Mobile Sidebar Overlay Backdrop -->
+            <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-900/30 z-40 lg:hidden hidden backdrop-blur-xs transition-all duration-300"></div>
 
             <!-- Sidebar iOS Dark Style -->
-            <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 w-72 ios-glass-dark text-slate-200 flex flex-col border-r border-white/10 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300">
+            <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-68 ios-glass-dark text-slate-200 flex flex-col border-r border-white/10 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 pt-safe">
                 <div class="p-5 flex items-center justify-between border-b border-white/10">
                     <div class="flex items-center space-x-3">
                         <div class="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-md shadow-indigo-500/30">
@@ -199,43 +202,43 @@
                             <span class="text-[10px] text-indigo-300 font-bold tracking-wider uppercase">iOS Edition</span>
                         </div>
                     </div>
-                    <button onclick="toggleMobileSidebar(false)" class="p-2 text-slate-300 hover:text-white lg:hidden active:scale-90 transition-transform">
-                        <i class="fa-solid fa-xmark text-xl"></i>
+                    <button onclick="toggleMobileSidebar(false)" class="p-2 text-slate-400 hover:text-white lg:hidden active:scale-90 transition-transform">
+                        <i class="fa-solid fa-xmark text-lg"></i>
                     </button>
                 </div>
 
                 <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto custom-scrollbar">
-                    <button onclick="switchTab('dashboard');" id="nav-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
+                    <button onclick="switchTab('dashboard'); toggleMobileSidebar(false);" id="nav-dashboard" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
                         <i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i>
                         <span>Dashboard & Báo cáo</span>
                     </button>
-                    <button onclick="switchTab('tasks');" id="nav-tasks" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
+                    <button onclick="switchTab('tasks'); toggleMobileSidebar(false);" id="nav-tasks" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
                         <i class="fa-solid fa-tasks w-5 text-center text-sm"></i>
                         <span>Quản lý Công việc</span>
                     </button>
-                    <button onclick="switchTab('schedule');" id="nav-schedule" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
+                    <button onclick="switchTab('schedule'); toggleMobileSidebar(false);" id="nav-schedule" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
                         <i class="fa-solid fa-calendar-days w-5 text-center text-sm"></i>
                         <span>Lịch Làm Việc (Phân Ca)</span>
                     </button>
-                    <button onclick="switchTab('shift-swap');" id="nav-shift-swap" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white relative">
+                    <button onclick="switchTab('shift-swap'); toggleMobileSidebar(false);" id="nav-shift-swap" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white relative">
                         <i class="fa-solid fa-right-left w-5 text-center text-sm"></i>
                         <span>Yêu cầu Đổi Ca</span>
                         <span id="shift-swap-badge" class="absolute right-3 px-2 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-bold hidden">0</span>
                     </button>
-                    <button onclick="switchTab('notifications');" id="nav-notifications" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white relative">
+                    <button onclick="switchTab('notifications'); toggleMobileSidebar(false);" id="nav-notifications" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white relative">
                         <i class="fa-solid fa-bell w-5 text-center text-sm"></i>
                         <span>Thông báo của tôi</span>
                         <span id="notif-badge" class="absolute right-3 px-2 py-0.5 rounded-full text-[10px] bg-rose-500 text-white font-bold hidden">0</span>
                     </button>
-                    <button onclick="switchTab('profile-settings');" id="nav-profile-settings" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
+                    <button onclick="switchTab('profile-settings'); toggleMobileSidebar(false);" id="nav-profile-settings" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white">
                         <i class="fa-solid fa-user-gear w-5 text-center text-sm"></i>
                         <span>Cài đặt Tài khoản</span>
                     </button>
-                    <button onclick="switchTab('users');" id="nav-users" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white admin-only hidden">
+                    <button onclick="switchTab('users'); toggleMobileSidebar(false);" id="nav-users" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white admin-only hidden">
                         <i class="fa-solid fa-users-gear w-5 text-center text-sm"></i>
                         <span>Quản trị Thành viên</span>
                     </button>
-                    <button onclick="switchTab('logs');" id="nav-logs" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white admin-only hidden">
+                    <button onclick="switchTab('logs'); toggleMobileSidebar(false);" id="nav-logs" class="w-full flex items-center space-x-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all text-slate-200 hover:bg-white/15 hover:text-white admin-only hidden">
                         <i class="fa-solid fa-clock-rotate-left w-5 text-center text-sm"></i>
                         <span>Nhật ký Hoạt động</span>
                     </button>
@@ -243,7 +246,7 @@
 
                 <div class="p-4 border-t border-white/10 bg-black/30">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3 overflow-hidden cursor-pointer" onclick="switchTab('profile-settings');" title="Sửa hồ sơ">
+                        <div class="flex items-center space-x-3 overflow-hidden cursor-pointer" onclick="switchTab('profile-settings'); toggleMobileSidebar(false);" title="Sửa hồ sơ">
                             <div id="user-avatar-container" class="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs flex-shrink-0 overflow-hidden ring-2 ring-indigo-400/40">
                                 <span id="user-avatar-text">A</span>
                             </div>
@@ -259,11 +262,11 @@
                 </div>
             </aside>
 
-            <!-- Content Area iOS Wrapper -->
+            <!-- Content Area iOS Wrapper (Được bổ sung pt-10 sm:pt-4 để khắc phục xung đột nút chức năng với Notch/Status bar của iPhone) -->
             <main class="flex-1 flex flex-col overflow-hidden bg-[#f2f2f7] w-full">
-                <header class="ios-glass border-b border-slate-200/50 px-4 sm:px-6 py-3.5 flex items-center justify-between sticky top-0 z-40">
+                <header class="ios-glass border-b border-slate-200/50 px-4 sm:px-6 pt-10 pb-3.5 sm:py-3.5 flex items-center justify-between sticky top-0 z-30">
                     <div class="flex items-center space-x-3">
-                        <button onclick="toggleMobileSidebar(true)" class="p-2.5 rounded-2xl bg-white/90 border border-slate-300/70 text-slate-800 lg:hidden flex items-center justify-center active:scale-95 transition-transform shadow-xs">
+                        <button onclick="toggleMobileSidebar(true)" class="p-2 rounded-2xl bg-white/90 border border-slate-300/70 text-slate-800 lg:hidden flex items-center justify-center active:scale-95 transition-transform shadow-xs">
                             <i class="fa-solid fa-bars text-base"></i>
                         </button>
                         <h2 id="page-title" class="text-base sm:text-lg font-bold text-slate-900 tracking-tight truncate">Dashboard Tổng Quan</h2>
@@ -558,16 +561,48 @@
                                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-search text-xs"></i></span>
                                     <input type="text" id="task-search" placeholder="Tìm kiếm công việc..." class="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900 shadow-xs">
                                 </div>
-                                <select id="task-filter-assignee" onchange="renderTasks()" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs">
-                                    <option value="">Tất cả nhân sự</option>
-                                </select>
-                                <select id="task-filter-status" onchange="renderTasks()" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs">
-                                    <option value="">Tất cả trạng thái</option>
-                                    <option value="Chưa Thực Hiện">Chưa Thực Hiện</option>
-                                    <option value="Đang Thực Hiện">Đang Thực Hiện</option>
-                                    <option value="Đã Hoàn Thành">Đã Hoàn Thành</option>
-                                    <option value="Huỷ">Huỷ</option>
-                                </select>
+
+                                <!-- Bộ lọc Multi-select Chọn Nhân sự -->
+                                <div class="relative inline-block text-left">
+                                    <button type="button" onclick="toggleMultiSelectDropdown('assignee')" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs flex items-center justify-between space-x-2">
+                                        <span id="assignee-filter-label">Tất cả nhân sự</span>
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </button>
+                                    <div id="multi-dropdown-assignee" class="absolute z-20 left-0 mt-1 w-56 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1 max-h-56 overflow-y-auto">
+                                        <!-- Javascript sẽ tự render các lựa chọn có Checkbox -->
+                                    </div>
+                                </div>
+
+                                <!-- Bộ lọc Multi-select Chọn Trạng thái -->
+                                <div class="relative inline-block text-left">
+                                    <button type="button" onclick="toggleMultiSelectDropdown('status')" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs flex items-center justify-between space-x-2">
+                                        <span id="status-filter-label">Tất cả trạng thái</span>
+                                        <i class="fa-solid fa-chevron-down text-xs"></i>
+                                    </button>
+                                    <div id="multi-dropdown-status" class="absolute z-20 left-0 mt-1 w-52 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1">
+                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                                            <input type="checkbox" value="Urgent" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Urgent (Khẩn cấp 🔥)</span>
+                                        </label>
+                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                                            <input type="checkbox" value="Chưa Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Chưa Thực Hiện</span>
+                                        </label>
+                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                                            <input type="checkbox" value="Đang Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Đang Thực Hiện</span>
+                                        </label>
+                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                                            <input type="checkbox" value="Đã Hoàn Thành" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Đã Hoàn Thành</span>
+                                        </label>
+                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                                            <input type="checkbox" value="Huỷ" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                                            <span>Huỷ</span>
+                                        </label>
+                                    </div>
+                                </div>
+
                             </div>
                             <button onclick="openTaskModal()" class="w-full lg:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 admin-only hidden text-xs sm:text-sm">
                                 <i class="fa-solid fa-plus"></i>
@@ -1013,6 +1048,21 @@
                     renderTasks();
                 }, 300);
             }
+
+            // Đóng menu chọn multi-select khi click ra bên ngoài
+            document.addEventListener('click', function(e) {
+                const isAssigneeClick = e.target.closest('#multi-dropdown-assignee') || e.target.closest('button[onclick*="assignee"]');
+                const isStatusClick = e.target.closest('#multi-dropdown-status') || e.target.closest('button[onclick*="status"]');
+                
+                if (!isAssigneeClick) {
+                    const dropdown = document.getElementById('multi-dropdown-assignee');
+                    if (dropdown) dropdown.classList.add('hidden');
+                }
+                if (!isStatusClick) {
+                    const dropdown = document.getElementById('multi-dropdown-status');
+                    if (dropdown) dropdown.classList.add('hidden');
+                }
+            });
 
             setTimeout(hideLoading, 1200);
         });
@@ -1708,12 +1758,21 @@
         }
 
         function populateAssignees() {
-            const selFilter = document.getElementById('task-filter-assignee');
-            if (selFilter) {
-                let htmlFilter = '<option value="">Tất cả nhân sự</option>';
-                cloudUsers.forEach(u => htmlFilter += `<option value="${u.id}">${u.name}</option>`);
-                selFilter.innerHTML = htmlFilter;
+            // Render giao diện Multi-select Dropdown cho Nhân sự
+            const container = document.getElementById('multi-dropdown-assignee');
+            if (container) {
+                let html = '';
+                cloudUsers.forEach(u => {
+                    html += `
+                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
+                            <input type="checkbox" value="${u.id}" onchange="handleMultiSelectChange('assignee')" class="rounded text-indigo-600 focus:ring-indigo-500">
+                            <span>${escapeHtml(u.name)}</span>
+                        </label>
+                    `;
+                });
+                container.innerHTML = html;
             }
+
             const swapTarget = document.getElementById('swap-target-user-select');
             if (swapTarget && currentUser) {
                 let htmlSwap = '';
@@ -1722,6 +1781,25 @@
                 });
                 swapTarget.innerHTML = htmlSwap;
             }
+        }
+
+        // Bổ sung các hàm xử lý Multi-Select Dropdown
+        function toggleMultiSelectDropdown(type) {
+            const dropdown = document.getElementById(`multi-dropdown-${type}`);
+            if (dropdown) dropdown.classList.toggle('hidden');
+        }
+
+        function handleMultiSelectChange(type) {
+            const checkboxes = document.querySelectorAll(`#multi-dropdown-${type} input[type="checkbox"]:checked`);
+            const label = document.getElementById(`${type}-filter-label`);
+            if (label) {
+                if (checkboxes.length === 0) {
+                    label.innerText = type === 'assignee' ? 'Tất cả nhân sự' : 'Tất cả trạng thái';
+                } else {
+                    label.innerText = `Đã chọn (${checkboxes.length})`;
+                }
+            }
+            renderTasks();
         }
 
         function showAssigneeDropdown() {
@@ -1800,8 +1878,12 @@
             if (!tbody) return;
 
             const searchQuery = document.getElementById('task-search')?.value.toLowerCase() || '';
-            const filterAssignee = document.getElementById('task-filter-assignee')?.value || '';
-            const filterStatus = document.getElementById('task-filter-status')?.value || '';
+
+            // Lấy danh sách Multi-select Nhân sự
+            const selectedAssignees = Array.from(document.querySelectorAll('#multi-dropdown-assignee input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            // Lấy danh sách Multi-select Trạng thái (bao gồm Urgent)
+            const selectedStatuses = Array.from(document.querySelectorAll('#multi-dropdown-status input[type="checkbox"]:checked')).map(cb => cb.value);
 
             let processedTasks = filterTasksByTime(cloudTasks, taskFutureViewMode);
 
@@ -1809,11 +1891,37 @@
                 processedTasks = processedTasks.filter(t => t.assigneeId === currentUser.id);
             }
 
+            // Thực hiện Lọc kết hợp với Multi-Select
             processedTasks = processedTasks.filter(t => {
                 const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery));
-                const matchesAssignee = !filterAssignee || t.assigneeId === filterAssignee;
-                const matchesStatus = !filterStatus || t.status === filterStatus;
+                
+                const matchesAssignee = selectedAssignees.length === 0 || selectedAssignees.includes(t.assigneeId);
+                
+                let matchesStatus = true;
+                if (selectedStatuses.length > 0) {
+                    matchesStatus = selectedStatuses.some(st => {
+                        if (st === 'Urgent') return t.priority === 'Urgent';
+                        return t.status === st;
+                    });
+                }
+
                 return matchesSearch && matchesAssignee && matchesStatus;
+            });
+
+            // Thứ tự hiển thị ưu tiên: Urgent -> Chưa Thực Hiện -> Đang Thực Hiện -> Đã Hoàn Thành
+            const statusOrder = {
+                'Urgent': 1,
+                'Chưa Thực Hiện': 2,
+                'Đang Thực Hiện': 3,
+                'Đã Hoàn Thành': 4,
+                'Huỷ': 5
+            };
+
+            processedTasks.sort((a, b) => {
+                const orderA = a.priority === 'Urgent' ? 1 : (statusOrder[a.status] || 99);
+                const orderB = b.priority === 'Urgent' ? 1 : (statusOrder[b.status] || 99);
+                if (orderA !== orderB) return orderA - orderB;
+                return (b.createdAt || 0) - (a.createdAt || 0);
             });
 
             let html = '';
@@ -1832,8 +1940,6 @@
                     let priorityBadge = '';
                     if (t.priority === 'Urgent') {
                         priorityBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black bg-rose-600 text-white mb-1 shadow-md animate-pulse"><i class="fa-solid fa-fire mr-1.5 text-amber-300"></i>Urgent 🔥</span>`;
-                    } else {
-                        priorityBadge = ``;
                     }
 
                     const isAdmin = currentUser && currentUser.role === 'ADMIN';
@@ -2678,9 +2784,6 @@
         }
 
         function switchTab(tab) {
-            // Tự động ẩn menu trên mobile khi chọn tab để trải nghiệm mượt mà
-            toggleMobileSidebar(false);
-
             if (currentTab === tab) return;
 
             const tabs = ['dashboard', 'profile-settings', 'tasks', 'schedule', 'shift-swap', 'notifications', 'users', 'logs'];
@@ -2726,7 +2829,7 @@
                 if (tab === 'users') renderUsers();
                 if (tab === 'logs') renderLogs();
 
-            }, 200);
+            }, 300);
         }
 
         function exportDataExcel() {
