@@ -123,9 +123,24 @@
         
         #mobile-sidebar { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
 
-        /* Custom style cho Multi-select dropdown */
         .multi-select-option:hover {
             background-color: rgba(99, 102, 241, 0.1);
+        }
+
+        /* Hiệu ứng Toast trượt góc phải giống ứng dụng chat */
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(100%); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to { opacity: 0; transform: translateX(100%); }
+        }
+        .toast-slide-in {
+            animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .toast-slide-out {
+            animation: slideOutRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
     </style>
 </head>
@@ -142,8 +157,8 @@
         </div>
     </div>
 
-    <!-- Notification Toast Container (Thêm safe area notch top cho iOS) -->
-    <div id="toast-container" class="fixed top-12 right-4 left-4 sm:left-auto sm:right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+    <!-- Notification Toast Container (Góc trên bên phải - giống ứng dụng chat) -->
+    <div id="toast-container" class="fixed top-6 right-6 z-50 flex flex-col space-y-3 pointer-events-none max-w-sm w-full"></div>
 
     <!-- MAIN APP CONTAINER -->
     <div id="app" class="flex-1 flex flex-col h-full overflow-hidden">
@@ -262,7 +277,7 @@
                 </div>
             </aside>
 
-            <!-- Content Area iOS Wrapper (Được bổ sung pt-10 sm:pt-4 để khắc phục xung đột nút chức năng với Notch/Status bar của iPhone) -->
+            <!-- Content Area iOS Wrapper -->
             <main class="flex-1 flex flex-col overflow-hidden bg-[#f2f2f7] w-full">
                 <header class="ios-glass border-b border-slate-200/50 px-4 sm:px-6 pt-10 pb-3.5 sm:py-3.5 flex items-center justify-between sticky top-0 z-30">
                     <div class="flex items-center space-x-3">
@@ -307,32 +322,24 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                            <div onclick="handleStatCardClick('total')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
+                        <!-- THỨ TỰ THẺ DASHBOARD: Chưa làm, Đang làm, Quá hạn, Tổng việc, Hoàn Thành, Tỷ lệ hoàn thành -->
+                        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+                            <div onclick="handleStatCardClick('todo')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat bg-slate-50/80">
                                 <div>
-                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Tổng việc</p>
-                                    <h3 id="stat-total" class="text-2xl font-black text-slate-900 mt-1">0</h3>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Chưa làm</p>
+                                    <h3 id="stat-todo" class="text-2xl font-black text-slate-800 mt-1">0</h3>
                                 </div>
-                                <div class="w-11 h-11 rounded-2xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center text-lg shadow-xs">
-                                    <i class="fa-solid fa-briefcase"></i>
+                                <div class="w-11 h-11 rounded-2xl bg-slate-200/80 text-slate-700 flex items-center justify-center text-lg shadow-xs">
+                                    <i class="fa-solid fa-list"></i>
                                 </div>
                             </div>
-                            <div onclick="handleStatCardClick('doing')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
+                            <div onclick="handleStatCardClick('doing')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat bg-amber-50/50">
                                 <div>
                                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Đang làm</p>
                                     <h3 id="stat-doing" class="text-2xl font-black text-amber-700 mt-1">0</h3>
                                 </div>
                                 <div class="w-11 h-11 rounded-2xl bg-amber-100/80 text-amber-700 flex items-center justify-center text-lg shadow-xs">
                                     <i class="fa-solid fa-spinner"></i>
-                                </div>
-                            </div>
-                            <div onclick="handleStatCardClick('done')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
-                                <div>
-                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Hoàn thành</p>
-                                    <h3 id="stat-done" class="text-2xl font-black text-emerald-700 mt-1">0</h3>
-                                </div>
-                                <div class="w-11 h-11 rounded-2xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center text-lg shadow-xs">
-                                    <i class="fa-solid fa-circle-check"></i>
                                 </div>
                             </div>
                             <div onclick="handleStatCardClick('overdue')" class="ios-card p-4 sm:p-5 bg-rose-50/70 border-rose-200 flex items-center justify-between clickable-stat">
@@ -344,18 +351,37 @@
                                     <i class="fa-solid fa-triangle-exclamation"></i>
                                 </div>
                             </div>
-                            <div class="col-span-2 sm:col-span-1 ios-card p-4 sm:p-5 flex items-center justify-between">
+                            <div onclick="handleStatCardClick('total')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat bg-indigo-50/50">
                                 <div>
-                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">Tỷ lệ xong</p>
-                                    <h3 id="stat-completion-rate" class="text-2xl font-black text-indigo-700 mt-1">0%</h3>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700">Tổng việc</p>
+                                    <h3 id="stat-total" class="text-2xl font-black text-indigo-900 mt-1">0</h3>
                                 </div>
                                 <div class="w-11 h-11 rounded-2xl bg-indigo-100/80 text-indigo-700 flex items-center justify-center text-lg shadow-xs">
+                                    <i class="fa-solid fa-briefcase"></i>
+                                </div>
+                            </div>
+                            <div onclick="handleStatCardClick('done')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat bg-emerald-50/50">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Hoàn thành</p>
+                                    <h3 id="stat-done" class="text-2xl font-black text-emerald-700 mt-1">0</h3>
+                                </div>
+                                <div class="w-11 h-11 rounded-2xl bg-emerald-100/80 text-emerald-700 flex items-center justify-center text-lg shadow-xs">
+                                    <i class="fa-solid fa-circle-check"></i>
+                                </div>
+                            </div>
+                            <div class="ios-card p-4 sm:p-5 flex items-center justify-between bg-purple-50/50">
+                                <div>
+                                    <p class="text-[10px] font-extrabold uppercase tracking-wider text-purple-700">Tỷ lệ xong</p>
+                                    <h3 id="stat-completion-rate" class="text-2xl font-black text-purple-800 mt-1">0%</h3>
+                                </div>
+                                <div class="w-11 h-11 rounded-2xl bg-purple-100/80 text-purple-700 flex items-center justify-center text-lg shadow-xs">
                                     <i class="fa-solid fa-chart-pie"></i>
                                 </div>
                             </div>
                         </div>
 
                         <div id="admin-advanced-dashboard" class="space-y-4 sm:space-y-6 admin-only hidden">
+                            <!-- ĐÃ XOÁ BIỂU ĐỒ XU HƯỚNG VÀ TẢI CÔNG VIỆC THEO YÊU CẦU, GIỮ LẠI BIỂU ĐỒ PHÂN BỐ TRẠNG THÁI -->
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                                 <div class="ios-card p-4 sm:p-6">
                                     <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
@@ -364,27 +390,6 @@
                                     </h3>
                                     <div class="relative h-60 sm:h-72 flex items-center justify-center">
                                         <canvas id="statusChart"></canvas>
-                                    </div>
-                                </div>
-                                <div class="ios-card p-4 sm:p-6">
-                                    <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                                        <i class="fa-solid fa-layer-group text-indigo-600"></i>
-                                        <span>Tải công việc (Workload) Nhân sự</span>
-                                    </h3>
-                                    <div class="relative h-60 sm:h-72 flex items-center justify-center">
-                                        <canvas id="performanceChart"></canvas>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                                <div class="ios-card p-4 sm:p-6 lg:col-span-2">
-                                    <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                                        <i class="fa-solid fa-chart-line text-indigo-600"></i>
-                                        <span>Biểu đồ xu hướng giao & hoàn thành</span>
-                                    </h3>
-                                    <div class="relative h-60 sm:h-64 flex items-center justify-center">
-                                        <canvas id="trendChart"></canvas>
                                     </div>
                                 </div>
                                 <div class="ios-card p-4 sm:p-6 flex flex-col justify-between">
@@ -408,20 +413,25 @@
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                            <!-- BẢNG TOP NHÂN SỰ & CẢNH BÁO ĐÃ ĐƯỢC MỞ RỘNG THÊM ĐẦY ĐỦ CÁC CỘT TRẠNG THÁI VÀ TỶ LỆ HOÀN THÀNH -->
+                            <div class="grid grid-cols-1 gap-4 sm:gap-6">
                                 <div class="ios-card p-4 sm:p-6">
                                     <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
                                         <i class="fa-solid fa-trophy text-amber-500"></i>
-                                        <span>Top Nhân Sự & Cảnh Báo</span>
+                                        <span>Bảng Top Nhân Sự & Trạng Thái Chi Tiết Công Việc</span>
                                     </h3>
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-left border-collapse text-xs">
                                             <thead>
                                                 <tr class="bg-slate-100/80 border-b text-slate-700 uppercase font-extrabold">
                                                     <th class="py-2.5 px-3">Nhân sự</th>
-                                                    <th class="py-2.5 px-3 text-center">Xong</th>
+                                                    <th class="py-2.5 px-3 text-center">Tổng</th>
+                                                    <th class="py-2.5 px-3 text-center">Chưa làm</th>
                                                     <th class="py-2.5 px-3 text-center">Đang làm</th>
-                                                    <th class="py-2.5 px-3 text-right">Workload</th>
+                                                    <th class="py-2.5 px-3 text-center">Quá hạn</th>
+                                                    <th class="py-2.5 px-3 text-center">Hoàn thành</th>
+                                                    <th class="py-2.5 px-3 text-center">Tỷ lệ xong</th>
+                                                    <th class="py-2.5 px-3 text-right">Đánh giá tải</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="admin-top-performers-body" class="divide-y divide-slate-200/60"></tbody>
@@ -569,37 +579,6 @@
                                         <i class="fa-solid fa-chevron-down text-xs"></i>
                                     </button>
                                     <div id="multi-dropdown-assignee" class="absolute z-20 left-0 mt-1 w-56 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1 max-h-56 overflow-y-auto">
-                                        <!-- Javascript sẽ tự render các lựa chọn có Checkbox -->
-                                    </div>
-                                </div>
-
-                                <!-- Bộ lọc Multi-select Chọn Trạng thái -->
-                                <div class="relative inline-block text-left">
-                                    <button type="button" onclick="toggleMultiSelectDropdown('status')" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs flex items-center justify-between space-x-2">
-                                        <span id="status-filter-label">Tất cả trạng thái</span>
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                                    </button>
-                                    <div id="multi-dropdown-status" class="absolute z-20 left-0 mt-1 w-52 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1">
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Urgent" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Urgent (Khẩn cấp 🔥)</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Chưa Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Chưa Thực Hiện</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Đang Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Đang Thực Hiện</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Đã Hoàn Thành" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Đã Hoàn Thành</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Huỷ" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Huỷ</span>
-                                        </label>
                                     </div>
                                 </div>
 
@@ -608,6 +587,40 @@
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Giao việc mới</span>
                             </button>
+                        </div>
+
+                        <!-- HÀNG NGANG LỌC TRẠNG THÁI -->
+                        <div class="ios-card p-2.5 sm:p-3">
+                            <div class="flex items-center gap-2 overflow-x-auto custom-scrollbar pb-1">
+                                <span class="text-xs font-extrabold text-slate-700 pl-2 pr-1 flex items-center space-x-1 whitespace-nowrap">
+                                    <i class="fa-solid fa-filter text-indigo-600"></i>
+                                    <span>Trạng thái:</span>
+                                </span>
+                                <button onclick="setTaskStatusFilter('all')" id="status-tab-all" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-xs whitespace-nowrap flex-shrink-0 flex items-center space-x-2">
+                                    <span>Tất cả</span>
+                                    <span id="badge-count-all" class="px-1.5 py-0.2 bg-white/20 text-white rounded-full text-[10px] font-black">0</span>
+                                </button>
+                                <button onclick="setTaskStatusFilter('Chưa Thực Hiện')" id="status-tab-Chưa Thực Hiện" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-slate-200/90 hover:bg-slate-300 text-slate-800 whitespace-nowrap flex-shrink-0 flex items-center space-x-2 border border-slate-300">
+                                    <span>Chưa làm</span>
+                                    <span id="badge-count-Chưa Thực Hiện" class="px-1.5 py-0.2 bg-slate-400/50 text-slate-900 rounded-full text-[10px] font-black">0</span>
+                                </button>
+                                <button onclick="setTaskStatusFilter('Đang Thực Hiện')" id="status-tab-Đang Thực Hiện" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-amber-100 hover:bg-amber-200 text-amber-900 whitespace-nowrap flex-shrink-0 flex items-center space-x-2 border border-amber-300">
+                                    <span>Đang làm</span>
+                                    <span id="badge-count-Đang Thực Hiện" class="px-1.5 py-0.2 bg-amber-500 text-white rounded-full text-[10px] font-black">0</span>
+                                </button>
+                                <button onclick="setTaskStatusFilter('Quá Hạn')" id="status-tab-Quá Hạn" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-rose-100 hover:bg-rose-200 text-rose-900 whitespace-nowrap flex-shrink-0 flex items-center space-x-2 border border-rose-300">
+                                    <span>Quá hạn</span>
+                                    <span id="badge-count-Quá Hạn" class="px-1.5 py-0.2 bg-rose-600 text-white rounded-full text-[10px] font-black">0</span>
+                                </button>
+                                <button onclick="setTaskStatusFilter('Đã Hoàn Thành')" id="status-tab-Đã Hoàn Thành" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-emerald-100 hover:bg-emerald-200 text-emerald-900 whitespace-nowrap flex-shrink-0 flex items-center space-x-2 border border-emerald-300">
+                                    <span>Hoàn thành</span>
+                                    <span id="badge-count-Đã Hoàn Thành" class="px-1.5 py-0.2 bg-emerald-600 text-white rounded-full text-[10px] font-black">0</span>
+                                </button>
+                                <button onclick="setTaskStatusFilter('Huỷ')" id="status-tab-Huỷ" class="px-3.5 py-2 rounded-xl text-xs font-bold transition-all bg-purple-100 hover:bg-purple-200 text-purple-900 whitespace-nowrap flex-shrink-0 flex items-center space-x-2 border border-purple-300">
+                                    <span>Huỷ</span>
+                                    <span id="badge-count-Huỷ" class="px-1.5 py-0.2 bg-purple-600 text-white rounded-full text-[10px] font-black">0</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div id="task-future-view-label" class="px-4 py-2.5 bg-indigo-100/70 text-indigo-900 rounded-2xl text-xs font-bold flex items-center space-x-2 border border-indigo-200">
@@ -1008,12 +1021,12 @@
         let highlightedStaff = {}; 
         let highlightedTasks = {}; 
         let statusChartInstance = null;
-        let performanceChartInstance = null;
-        let trendChartInstance = null;
         let scheduleViewMode = 'day'; 
         let taskFutureViewMode = 'day';
+        let currentTaskStatusFilter = 'all'; 
         let selectedAssigneeId = '';
         let currentTab = 'dashboard';
+        let isInitialLoadDone = false; // Biến kiểm tra lượt tải đầu tiên để không bắn pop-up lịch sử cũ
 
         const defaultUsers = [
             { id: 'shp', name: 'Sơn Hoài Phương', phone: 'shp', password: '123', role: 'ADMIN', status: 'ACTIVE', email: 'shp@company.com', nickname: 'SuperAdmin', avatar: '', order: 0 },
@@ -1049,22 +1062,18 @@
                 }, 300);
             }
 
-            // Đóng menu chọn multi-select khi click ra bên ngoài
             document.addEventListener('click', function(e) {
                 const isAssigneeClick = e.target.closest('#multi-dropdown-assignee') || e.target.closest('button[onclick*="assignee"]');
-                const isStatusClick = e.target.closest('#multi-dropdown-status') || e.target.closest('button[onclick*="status"]');
-                
                 if (!isAssigneeClick) {
                     const dropdown = document.getElementById('multi-dropdown-assignee');
                     if (dropdown) dropdown.classList.add('hidden');
                 }
-                if (!isStatusClick) {
-                    const dropdown = document.getElementById('multi-dropdown-status');
-                    if (dropdown) dropdown.classList.add('hidden');
-                }
             });
 
-            setTimeout(hideLoading, 1200);
+            setTimeout(() => {
+                hideLoading();
+                isInitialLoadDone = true; // Kích hoạt cho phép hiện toast pop-up realtime sau khi load xong lần đầu
+            }, 1500);
         });
 
         function toggleMobileSidebar(isOpen) {
@@ -1094,17 +1103,34 @@
             if (el) el.innerText = new Date().toLocaleString('vi-VN');
         }
 
+        // HÀM HIỂN THỊ IN-APP TOAST BANNER NỔI GÓC PHẢI (GIỐNG ỨNG DỤNG CHAT)
         function showToast(msg, isError = false) {
             const container = document.getElementById('toast-container');
+            if (!container) return;
+
             const toast = document.createElement('div');
-            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl text-white shadow-xl text-xs sm:text-sm font-bold transition-all duration-300 backdrop-blur-md ${isError ? 'bg-rose-600/90' : 'bg-emerald-600/90'}`;
-            toast.innerText = msg;
+            toast.className = `pointer-events-auto p-4 rounded-2xl text-white shadow-2xl text-xs sm:text-sm font-bold transition-all duration-300 backdrop-blur-md flex items-center justify-between space-x-3 toast-slide-in ${isError ? 'bg-rose-600/95 border border-rose-400' : 'bg-slate-900/95 border border-slate-700'}`;
+            
+            const iconClass = isError ? 'fa-triangle-exclamation text-amber-300' : 'fa-bell text-indigo-400';
+
+            toast.innerHTML = `
+                <div class="flex items-center space-x-3 overflow-hidden">
+                    <i class="fa-solid ${iconClass} text-lg flex-shrink-0"></i>
+                    <span class="truncate">${escapeHtml(msg)}</span>
+                </div>
+                <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+
             container.appendChild(toast);
+
+            // Tự động ẩn sau 4 giây với hiệu ứng trượt ra
             setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-10px)';
+                toast.classList.remove('toast-slide-in');
+                toast.classList.add('toast-slide-out');
                 setTimeout(() => toast.remove(), 300);
-            }, 3000);
+            }, 4000);
         }
 
         async function requestDeviceNotification() {
@@ -1167,7 +1193,20 @@
               .orderBy('createdAt', 'desc')
               .limit(100)
               .onSnapshot(snapshot => {
+                let firstLoad = !isInitialLoadDone;
                 cloudTasks = [];
+                snapshot.docChanges().forEach(change => {
+                    let taskData = { id: change.doc.id, ...change.doc.data() };
+                    if (!firstLoad && isInitialLoadDone && currentUser) {
+                        // Bật Toast nổi khi có công việc mới được tạo hoặc cập nhật thời gian thực
+                        if (change.type === 'added') {
+                            showToast(`Mới: Có công việc "${taskData.title}" được tạo!`);
+                        } else if (change.type === 'modified') {
+                            showToast(`Cập nhật: Công việc "${taskData.title}" đã đổi trạng thái thành [${taskData.status}]`);
+                        }
+                    }
+                });
+
                 snapshot.forEach(doc => cloudTasks.push({ id: doc.id, ...doc.data() }));
                 renderTasks();
                 renderDashboard();
@@ -1188,6 +1227,14 @@
 
             db.collection('notifications').onSnapshot(snapshot => {
                 cloudNotifications = [];
+                snapshot.docChanges().forEach(change => {
+                    let notif = change.doc.data();
+                    if (isInitialLoadDone && change.type === 'added' && currentUser && notif.userId === currentUser.id) {
+                        // Hiển thị Toast nổi góc phải cho thông báo đích danh user hiện tại
+                        showToast(notif.title + ": " + notif.message);
+                    }
+                });
+
                 snapshot.forEach(doc => { cloudNotifications.push({ id: doc.id, ...doc.data() }); });
                 renderNotificationsBadge();
                 renderNotificationsList();
@@ -1538,23 +1585,23 @@
             const filteredTasks = filterTasksByTime(tasksToCalc, filterType);
 
             const total = filteredTasks.length;
+            const todo = filteredTasks.filter(t => t.status === 'Chưa Thực Hiện').length;
             const doing = filteredTasks.filter(t => t.status === 'Đang Thực Hiện').length;
             const done = filteredTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
             const todayStr = new Date().toISOString().split('T')[0];
             const overdue = filteredTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
 
-            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-todo').innerText = todo;
             document.getElementById('stat-doing').innerText = doing;
-            document.getElementById('stat-done').innerText = done;
             document.getElementById('stat-overdue').innerText = overdue;
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-done').innerText = done;
 
             const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
             document.getElementById('stat-completion-rate').innerText = completionRate + '%';
 
             if (currentUser && currentUser.role === 'ADMIN') {
                 renderStatusChart(filteredTasks);
-                renderPerformanceChart(filteredTasks);
-                renderTrendChart(filteredTasks);
                 renderAdminTopPerformersAndRisks(filteredTasks);
             }
         }
@@ -1580,56 +1627,33 @@
             });
         }
 
-        function renderPerformanceChart(tasksData) {
-            const ctx = document.getElementById('performanceChart')?.getContext('2d');
-            if (!ctx) return;
-            const names = cloudUsers.map(u => u.nickname || u.name);
-            const workloadCounts = cloudUsers.map(u => tasksData.filter(t => t.assigneeId === u.id).length);
-
-            if (performanceChartInstance) performanceChartInstance.destroy();
-            performanceChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: names,
-                    datasets: [{ label: 'Số việc giao', data: workloadCounts, backgroundColor: '#007aff', borderRadius: 8 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function renderTrendChart(tasksData) {
-            const ctx = document.getElementById('trendChart')?.getContext('2d');
-            if (!ctx) return;
-            if (trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần hiện tại'],
-                    datasets: [
-                        { label: 'Giao việc', data: [12, 19, 15, tasksData.length], borderColor: '#007aff', tension: 0.35 },
-                        { label: 'Hoàn thành', data: [10, 15, 14, tasksData.filter(t => t.status === 'Đã Hoàn Thành').length], borderColor: '#34c759', tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
         function renderAdminTopPerformersAndRisks(tasksData) {
             const tbody = document.getElementById('admin-top-performers-body');
+            const todayStr = new Date().toISOString().split('T')[0];
+
             if (tbody) {
                 let html = '';
                 cloudUsers.forEach(u => {
                     let uTasks = tasksData.filter(t => t.assigneeId === u.id);
-                    let doneCount = uTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
-                    let doingCount = uTasks.filter(t => t.status === 'Đang Thực Hiện').length;
+                    let totalU = uTasks.length;
+                    let todoU = uTasks.filter(t => t.status === 'Chưa Thực Hiện').length;
+                    let doingU = uTasks.filter(t => t.status === 'Đang Thực Hiện').length;
+                    let overdueU = uTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
+                    let doneU = uTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
+                    let rateU = totalU > 0 ? Math.round((doneU / totalU) * 100) : 0;
+
                     let workloadBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Ổn định</span>`;
-                    if (doingCount > 5) workloadBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-800">Quá tải (${doingCount})</span>`;
+                    if (doingU > 5) workloadBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-800">Quá tải (${doingU})</span>`;
 
                     html += `
                         <tr class="hover:bg-slate-200/50 transition-colors">
                             <td class="py-2.5 px-3 font-bold text-slate-950">${escapeHtml(u.nickname ? `${u.name} (${u.nickname})` : u.name)}</td>
-                            <td class="py-2.5 px-3 text-center font-black text-emerald-700">${doneCount}</td>
-                            <td class="py-2.5 px-3 text-center font-black text-amber-700">${doingCount}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-slate-900">${totalU}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-slate-600">${todoU}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-amber-700">${doingU}</td>
+                            <td class="py-2.5 px-3 text-center font-bold text-rose-600">${overdueU}</td>
+                            <td class="py-2.5 px-3 text-center font-black text-emerald-700">${doneU}</td>
+                            <td class="py-2.5 px-3 text-center font-black text-purple-700">${rateU}%</td>
                             <td class="py-2.5 px-3 text-right">${workloadBadge}</td>
                         </tr>
                     `;
@@ -1639,8 +1663,6 @@
 
             const riskContainer = document.getElementById('admin-risk-alerts-container');
             if (riskContainer) {
-                const now = new Date();
-                const todayStr = now.toISOString().split('T')[0];
                 let riskTasks = tasksData.filter(t => {
                     if (t.status === 'Đã Hoàn Thành' || t.status === 'Huỷ' || !t.deadline) return false;
                     let diffDays = Math.ceil((new Date(t.deadline) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
@@ -1684,12 +1706,15 @@
             if (statType === 'total') {
                 targetTasks = filteredTasks;
                 titleText = "Tất cả công việc tương ứng";
+            } else if (statType === 'todo') {
+                targetTasks = filteredTasks.filter(t => t.status === 'Chưa Thực Hiện');
+                titleText = "Danh sách công việc: Chưa làm";
             } else if (statType === 'doing') {
                 targetTasks = filteredTasks.filter(t => t.status === 'Đang Thực Hiện');
-                titleText = "Danh sách công việc: Đang thực hiện";
+                titleText = "Danh sách công việc: Đang làm";
             } else if (statType === 'done') {
                 targetTasks = filteredTasks.filter(t => t.status === 'Đã Hoàn Thành');
-                titleText = "Danh sách công việc: Đã hoàn thành";
+                titleText = "Danh sách công việc: Hoàn thành";
             } else if (statType === 'overdue') {
                 targetTasks = filteredTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành');
                 titleText = "Danh sách công việc: Quá hạn";
@@ -1757,8 +1782,25 @@
             renderTasks();
         }
 
+        function setTaskStatusFilter(status) {
+            currentTaskStatusFilter = status;
+            
+            const statuses = ['all', 'Chưa Thực Hiện', 'Đang Thực Hiện', 'Quá Hạn', 'Đã Hoàn Thành', 'Huỷ'];
+            statuses.forEach(st => {
+                const btn = document.getElementById(`status-tab-${st}`);
+                if (btn) {
+                    if (st === status) {
+                        btn.className += " ring-2 ring-offset-2 ring-indigo-500 scale-105 shadow-md";
+                    } else {
+                        btn.className = btn.className.replace(/ring-2 ring-offset-2 ring-indigo-500 scale-105 shadow-md/g, '').trim();
+                    }
+                }
+            });
+
+            renderTasks();
+        }
+
         function populateAssignees() {
-            // Render giao diện Multi-select Dropdown cho Nhân sự
             const container = document.getElementById('multi-dropdown-assignee');
             if (container) {
                 let html = '';
@@ -1783,7 +1825,6 @@
             }
         }
 
-        // Bổ sung các hàm xử lý Multi-Select Dropdown
         function toggleMultiSelectDropdown(type) {
             const dropdown = document.getElementById(`multi-dropdown-${type}`);
             if (dropdown) dropdown.classList.toggle('hidden');
@@ -1794,7 +1835,7 @@
             const label = document.getElementById(`${type}-filter-label`);
             if (label) {
                 if (checkboxes.length === 0) {
-                    label.innerText = type === 'assignee' ? 'Tất cả nhân sự' : 'Tất cả trạng thái';
+                    label.innerText = 'Tất cả nhân sự';
                 } else {
                     label.innerText = `Đã chọn (${checkboxes.length})`;
                 }
@@ -1804,13 +1845,6 @@
 
         function showAssigneeDropdown() {
             renderAssigneeDropdownOptions(cloudUsers);
-        }
-
-        function hideAssigneeDropdown() {
-            setTimeout(() => {
-                const dropdown = document.getElementById('assignee-dropdown-list');
-                if (dropdown) dropdown.classList.add('hidden');
-            }, 200);
         }
 
         function toggleAssigneeDropdown() {
@@ -1878,37 +1912,43 @@
             if (!tbody) return;
 
             const searchQuery = document.getElementById('task-search')?.value.toLowerCase() || '';
-
-            // Lấy danh sách Multi-select Nhân sự
             const selectedAssignees = Array.from(document.querySelectorAll('#multi-dropdown-assignee input[type="checkbox"]:checked')).map(cb => cb.value);
 
-            // Lấy danh sách Multi-select Trạng thái (bao gồm Urgent)
-            const selectedStatuses = Array.from(document.querySelectorAll('#multi-dropdown-status input[type="checkbox"]:checked')).map(cb => cb.value);
-
-            let processedTasks = filterTasksByTime(cloudTasks, taskFutureViewMode);
-
+            let baseFilteredTasks = filterTasksByTime(cloudTasks, taskFutureViewMode);
             if (currentUser && currentUser.role !== 'ADMIN') {
-                processedTasks = processedTasks.filter(t => t.assigneeId === currentUser.id);
+                baseFilteredTasks = baseFilteredTasks.filter(t => t.assigneeId === currentUser.id);
             }
 
-            // Thực hiện Lọc kết hợp với Multi-Select
-            processedTasks = processedTasks.filter(t => {
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const countAll = baseFilteredTasks.length;
+            const countTodo = baseFilteredTasks.filter(t => t.status === 'Chưa Thực Hiện').length;
+            const countDoing = baseFilteredTasks.filter(t => t.status === 'Đang Thực Hiện').length;
+            const countOverdue = baseFilteredTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
+            const countDone = baseFilteredTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
+            const countCancel = baseFilteredTasks.filter(t => t.status === 'Huỷ').length;
+
+            if (document.getElementById('badge-count-all')) document.getElementById('badge-count-all').innerText = countAll;
+            if (document.getElementById('badge-count-Chưa Thực Hiện')) document.getElementById('badge-count-Chưa Thực Hiện').innerText = countTodo;
+            if (document.getElementById('badge-count-Đang Thực Hiện')) document.getElementById('badge-count-Đang Thực Hiện').innerText = countDoing;
+            if (document.getElementById('badge-count-Quá Hạn')) document.getElementById('badge-count-Quá Hạn').innerText = countOverdue;
+            if (document.getElementById('badge-count-Đã Hoàn Thành')) document.getElementById('badge-count-Đã Hoàn Thành').innerText = countDone;
+            if (document.getElementById('badge-count-Huỷ')) document.getElementById('badge-count-Huỷ').innerText = countCancel;
+
+            let processedTasks = baseFilteredTasks.filter(t => {
                 const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery));
-                
                 const matchesAssignee = selectedAssignees.length === 0 || selectedAssignees.includes(t.assigneeId);
                 
                 let matchesStatus = true;
-                if (selectedStatuses.length > 0) {
-                    matchesStatus = selectedStatuses.some(st => {
-                        if (st === 'Urgent') return t.priority === 'Urgent';
-                        return t.status === st;
-                    });
+                if (currentTaskStatusFilter === 'Quá Hạn') {
+                    matchesStatus = t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành';
+                } else if (currentTaskStatusFilter !== 'all') {
+                    matchesStatus = t.status === currentTaskStatusFilter;
                 }
 
                 return matchesSearch && matchesAssignee && matchesStatus;
             });
 
-            // Thứ tự hiển thị ưu tiên: Urgent -> Chưa Thực Hiện -> Đang Thực Hiện -> Đã Hoàn Thành
             const statusOrder = {
                 'Urgent': 1,
                 'Chưa Thực Hiện': 2,
@@ -2080,7 +2120,6 @@
 
         function closeTaskModal() { 
             document.getElementById('modal-task').classList.add('hidden'); 
-            hideAssigneeDropdown();
         }
 
         async function handleSaveTask(e) {
