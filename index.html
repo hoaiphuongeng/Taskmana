@@ -16,9 +16,7 @@
     <script>
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => console.log('ServiceWorker registered successfully: ', reg.scope))
-                    .catch(err => console.log('ServiceWorker registration failed: ', err));
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Fail:', err));
             });
         }
     </script>
@@ -44,10 +42,7 @@
                         },
                         primary: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca' }
                     },
-                    borderRadius: {
-                        '3xl': '1.5rem',
-                        '4xl': '2rem',
-                    }
+                    borderRadius: { '3xl': '1.5rem', '4xl': '2rem' }
                 }
             }
         }
@@ -111,7 +106,6 @@
         .custom-scrollbar::-webkit-scrollbar { width: 4px; height: 4px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(150, 150, 150, 0.4); border-radius: 10px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(100, 100, 100, 0.6); }
         
         .highlight-row { background-color: rgba(254, 243, 199, 0.6) !important; transition: background-color 0.3s ease; }
         .my-account-row { background-color: rgba(224, 231, 255, 0.6) !important; border-left: 4px solid #007aff; }
@@ -122,10 +116,10 @@
         .clickable-stat:hover { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08); }
         
         #mobile-sidebar { transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
-
-        /* Custom style cho Multi-select dropdown */
-        .multi-select-option:hover {
-            background-color: rgba(99, 102, 241, 0.1);
+        .status-tab-btn.active {
+            background-color: #ffffff;
+            color: #4f46e5;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
     </style>
 </head>
@@ -142,7 +136,7 @@
         </div>
     </div>
 
-    <!-- Notification Toast Container (Thêm safe area notch top cho iOS) -->
+    <!-- Notification Toast Container -->
     <div id="toast-container" class="fixed top-12 right-4 left-4 sm:left-auto sm:right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
 
     <!-- MAIN APP CONTAINER -->
@@ -186,11 +180,8 @@
 
         <!-- ==================== VIEW: MAIN APP ==================== -->
         <div id="view-main" class="flex-1 flex h-full overflow-hidden hidden relative">
-            
-            <!-- Mobile Sidebar Overlay Backdrop -->
             <div id="sidebar-backdrop" onclick="toggleMobileSidebar(false)" class="fixed inset-0 bg-slate-900/30 z-40 lg:hidden hidden backdrop-blur-xs transition-all duration-300"></div>
 
-            <!-- Sidebar iOS Dark Style -->
             <aside id="mobile-sidebar" class="fixed inset-y-0 left-0 z-50 w-68 ios-glass-dark text-slate-200 flex flex-col border-r border-white/10 transform -translate-x-full lg:translate-x-0 lg:static transition-transform duration-300 pt-safe">
                 <div class="p-5 flex items-center justify-between border-b border-white/10">
                     <div class="flex items-center space-x-3">
@@ -246,7 +237,7 @@
 
                 <div class="p-4 border-t border-white/10 bg-black/30">
                     <div class="flex items-center justify-between">
-                        <div class="flex items-center space-x-3 overflow-hidden cursor-pointer" onclick="switchTab('profile-settings'); toggleMobileSidebar(false);" title="Sửa hồ sơ">
+                        <div class="flex items-center space-x-3 overflow-hidden cursor-pointer" onclick="switchTab('profile-settings'); toggleMobileSidebar(false);">
                             <div id="user-avatar-container" class="w-9 h-9 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs flex-shrink-0 overflow-hidden ring-2 ring-indigo-400/40">
                                 <span id="user-avatar-text">A</span>
                             </div>
@@ -262,7 +253,6 @@
                 </div>
             </aside>
 
-            <!-- Content Area iOS Wrapper (Được bổ sung pt-10 sm:pt-4 để khắc phục xung đột nút chức năng với Notch/Status bar của iPhone) -->
             <main class="flex-1 flex flex-col overflow-hidden bg-[#f2f2f7] w-full">
                 <header class="ios-glass border-b border-slate-200/50 px-4 sm:px-6 pt-10 pb-3.5 sm:py-3.5 flex items-center justify-between sticky top-0 z-30">
                     <div class="flex items-center space-x-3">
@@ -301,14 +291,12 @@
                                     <option value="week">Tuần này</option>
                                     <option value="month">Tháng này</option>
                                     <option value="year">Năm nay</option>
-                                    <option value="upcoming">Sắp đến hạn (3 ngày)</option>
-                                    <option value="overdue">Quá hạn</option>
                                 </select>
                             </div>
                         </div>
 
                         <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-                            <div onclick="handleStatCardClick('total')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
+                            <div onclick="filterTaskFromStat('ALL')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
                                 <div>
                                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-slate-600">Tổng việc</p>
                                     <h3 id="stat-total" class="text-2xl font-black text-slate-900 mt-1">0</h3>
@@ -317,7 +305,7 @@
                                     <i class="fa-solid fa-briefcase"></i>
                                 </div>
                             </div>
-                            <div onclick="handleStatCardClick('doing')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
+                            <div onclick="filterTaskFromStat('Đang Thực Hiện')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
                                 <div>
                                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-amber-700">Đang làm</p>
                                     <h3 id="stat-doing" class="text-2xl font-black text-amber-700 mt-1">0</h3>
@@ -326,7 +314,7 @@
                                     <i class="fa-solid fa-spinner"></i>
                                 </div>
                             </div>
-                            <div onclick="handleStatCardClick('done')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
+                            <div onclick="filterTaskFromStat('Đã Hoàn Thành')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat">
                                 <div>
                                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-700">Hoàn thành</p>
                                     <h3 id="stat-done" class="text-2xl font-black text-emerald-700 mt-1">0</h3>
@@ -335,7 +323,7 @@
                                     <i class="fa-solid fa-circle-check"></i>
                                 </div>
                             </div>
-                            <div onclick="handleStatCardClick('overdue')" class="ios-card p-4 sm:p-5 bg-rose-50/70 border-rose-200 flex items-center justify-between clickable-stat">
+                            <div onclick="filterTaskFromStat('Quá Hạn')" class="ios-card p-4 sm:p-5 bg-rose-50/70 border-rose-200 flex items-center justify-between clickable-stat">
                                 <div>
                                     <p class="text-[10px] font-extrabold uppercase tracking-wider text-rose-700">Quá hạn</p>
                                     <h3 id="stat-overdue" class="text-2xl font-black text-rose-700 mt-1">0</h3>
@@ -376,92 +364,6 @@
                                     </div>
                                 </div>
                             </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-                                <div class="ios-card p-4 sm:p-6 lg:col-span-2">
-                                    <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                                        <i class="fa-solid fa-chart-line text-indigo-600"></i>
-                                        <span>Biểu đồ xu hướng giao & hoàn thành</span>
-                                    </h3>
-                                    <div class="relative h-60 sm:h-64 flex items-center justify-center">
-                                        <canvas id="trendChart"></canvas>
-                                    </div>
-                                </div>
-                                <div class="ios-card p-4 sm:p-6 flex flex-col justify-between">
-                                    <div>
-                                        <h3 class="text-sm font-bold text-slate-900 mb-1 flex items-center space-x-2">
-                                            <i class="fa-solid fa-clock text-indigo-600"></i>
-                                            <span>Chỉ số vận hành</span>
-                                        </h3>
-                                        <p class="text-xs font-medium text-slate-600 mb-4">Thời gian xử lý & tiến độ TB</p>
-                                    </div>
-                                    <div class="space-y-3">
-                                        <div class="p-3.5 bg-indigo-100/60 rounded-2xl border border-indigo-200">
-                                            <span class="block text-[10px] font-extrabold text-indigo-800 uppercase">Cycle Time TB</span>
-                                            <h4 id="metric-cycle-time" class="text-xl font-black text-indigo-900 mt-0.5">2.4 Ngày</h4>
-                                        </div>
-                                        <div class="p-3.5 bg-emerald-100/60 rounded-2xl border border-emerald-200">
-                                            <span class="block text-[10px] font-extrabold text-emerald-800 uppercase">On-time Rate</span>
-                                            <h4 id="metric-ontime-rate" class="text-xl font-black text-emerald-900 mt-0.5">92.5%</h4>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                                <div class="ios-card p-4 sm:p-6">
-                                    <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                                        <i class="fa-solid fa-trophy text-amber-500"></i>
-                                        <span>Top Nhân Sự & Cảnh Báo</span>
-                                    </h3>
-                                    <div class="overflow-x-auto">
-                                        <table class="w-full text-left border-collapse text-xs">
-                                            <thead>
-                                                <tr class="bg-slate-100/80 border-b text-slate-700 uppercase font-extrabold">
-                                                    <th class="py-2.5 px-3">Nhân sự</th>
-                                                    <th class="py-2.5 px-3 text-center">Xong</th>
-                                                    <th class="py-2.5 px-3 text-center">Đang làm</th>
-                                                    <th class="py-2.5 px-3 text-right">Workload</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="admin-top-performers-body" class="divide-y divide-slate-200/60"></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-
-                                <div class="ios-card p-4 sm:p-6">
-                                    <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
-                                        <i class="fa-solid fa-triangle-exclamation text-rose-600"></i>
-                                        <span>Cảnh báo việc trễ (24h tới)</span>
-                                    </h3>
-                                    <div id="admin-risk-alerts-container" class="space-y-3 max-h-64 overflow-y-auto custom-scrollbar"></div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- DANH SÁCH CÔNG VIỆC KHI CLICK CARD -->
-                        <div id="staff-clicked-task-section" class="ios-card p-4 sm:p-6 hidden">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 id="staff-clicked-title" class="text-sm font-bold text-slate-900 flex items-center space-x-2">
-                                    <i class="fa-solid fa-list-check text-indigo-600"></i>
-                                    <span>Danh sách công việc tương ứng</span>
-                                </h3>
-                                <button onclick="closeStaffClickedTaskList()" class="px-3 py-1 bg-slate-200 hover:bg-slate-300 rounded-xl text-xs font-bold text-slate-700">Đóng</button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left border-collapse table-auto">
-                                    <thead>
-                                        <tr class="bg-slate-100/80 border-b border-slate-200 text-xs font-extrabold text-slate-700 uppercase">
-                                            <th class="py-3 px-4 sm:px-6 w-2/5">Công việc</th>
-                                            <th class="py-3 px-3 sm:px-4 w-1/5">Trạng thái</th>
-                                            <th class="py-3 px-3 sm:px-4 w-1/5">Tiến độ</th>
-                                            <th class="py-3 px-3 sm:px-4 w-1/5">Deadline</th>
-                                            <th class="py-3 px-4 sm:px-6 text-right w-1/5">Thao tác</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="staff-clicked-tasks-body" class="divide-y divide-slate-200/60 text-xs sm:text-sm text-slate-900 font-medium"></tbody>
-                                </table>
-                            </div>
                         </div>
                     </div>
 
@@ -473,22 +375,6 @@
                                 <span>Cài Đặt Thông Tin Cá Nhân</span>
                             </h3>
                             <p class="text-xs font-semibold text-slate-600 mb-6">Cập nhật hồ sơ cá nhân, email, SĐT, biệt danh và ảnh đại diện.</p>
-
-                            <div class="mb-6 p-4 bg-indigo-100/70 border border-indigo-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-xs">
-                                <div class="flex items-center space-x-3">
-                                    <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center flex-shrink-0 text-lg shadow-sm">
-                                        <i class="fa-solid fa-mobile-screen-button"></i>
-                                    </div>
-                                    <div>
-                                        <h4 class="text-xs sm:text-sm font-bold text-indigo-950">Thông báo đẩy iOS / Mobile</h4>
-                                        <p class="text-[11px] font-semibold text-slate-700">Nhận thông báo trực tiếp trên màn hình thiết bị.</p>
-                                    </div>
-                                </div>
-                                <button onclick="requestDeviceNotification()" type="button" class="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-2xl text-xs shadow-md transition-all flex items-center justify-center space-x-1.5 whitespace-nowrap">
-                                    <i class="fa-solid fa-bell"></i>
-                                    <span>Bật Thông Báo</span>
-                                </button>
-                            </div>
 
                             <form id="form-profile-settings" onsubmit="handleSaveProfileSettings(event)" class="space-y-5">
                                 <div class="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 pb-6 border-b border-slate-200/80">
@@ -516,7 +402,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-1">Biệt danh (Nickname)</label>
-                                        <input type="text" id="profile-nickname-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900" placeholder="VD: MinPro">
+                                        <input type="text" id="profile-nickname-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900">
                                     </div>
                                 </div>
 
@@ -527,13 +413,13 @@
                                     </div>
                                     <div>
                                         <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-1">Địa chỉ Email</label>
-                                        <input type="email" id="profile-email-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900" placeholder="nhanvien@company.com">
+                                        <input type="email" id="profile-email-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900">
                                     </div>
                                 </div>
 
                                 <div>
                                     <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-1">Mật khẩu mới (Bỏ trống nếu giữ nguyên)</label>
-                                    <input type="password" id="profile-pass-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900" placeholder="••••••">
+                                    <input type="password" id="profile-pass-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900">
                                 </div>
 
                                 <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
@@ -546,12 +432,37 @@
                         </div>
                     </div>
 
-                    <!-- TAB 2: TASKS -->
+                    <!-- TAB 2: TASKS (MỤC QUẢN LÝ CÔNG VIỆC CÓ BỔ SUNG THANH TRẠNG THÁI CHUẨN) -->
                     <div id="tab-content-tasks" class="tab-content space-y-4 sm:space-y-6 hidden">
+                        
+                        <!-- BỔ SUNG THANH TRẠNG THÁI CÔNG VIỆC CỐ ĐỊNH THEO THỨ TỰ YÊU CẦU -->
+                        <div class="ios-card p-1.5 sm:p-2 bg-slate-200/80 flex items-center justify-between rounded-2xl overflow-x-auto gap-1">
+                            <button onclick="setTaskStatusTab('ALL')" id="status-tab-ALL" class="status-tab-btn flex-1 min-w-[110px] py-2 px-3 rounded-xl text-xs font-extrabold text-slate-600 transition-all flex items-center justify-center space-x-1.5 active">
+                                <span>Tất Cả</span>
+                                <span id="count-tab-ALL" class="px-2 py-0.5 rounded-full text-[10px] bg-indigo-100 text-indigo-700 font-extrabold">0</span>
+                            </button>
+                            <button onclick="setTaskStatusTab('Chưa Thực Hiện')" id="status-tab-Chưa Thực Hiện" class="status-tab-btn flex-1 min-w-[130px] py-2 px-3 rounded-xl text-xs font-extrabold text-slate-600 transition-all flex items-center justify-center space-x-1.5">
+                                <span>Chưa thực hiện</span>
+                                <span id="count-tab-Chưa Thực Hiện" class="px-2 py-0.5 rounded-full text-[10px] bg-slate-300 text-slate-800 font-extrabold">0</span>
+                            </button>
+                            <button onclick="setTaskStatusTab('Đang Thực Hiện')" id="status-tab-Đang Thực Hiện" class="status-tab-btn flex-1 min-w-[130px] py-2 px-3 rounded-xl text-xs font-extrabold text-slate-600 transition-all flex items-center justify-center space-x-1.5">
+                                <span>Đang thực hiện</span>
+                                <span id="count-tab-Đang Thực Hiện" class="px-2 py-0.5 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">0</span>
+                            </button>
+                            <button onclick="setTaskStatusTab('Quá Hạn')" id="status-tab-Quá Hạn" class="status-tab-btn flex-1 min-w-[110px] py-2 px-3 rounded-xl text-xs font-extrabold text-slate-600 transition-all flex items-center justify-center space-x-1.5">
+                                <span>Quá hạn</span>
+                                <span id="count-tab-Quá Hạn" class="px-2 py-0.5 rounded-full text-[10px] bg-rose-100 text-rose-800 font-extrabold">0</span>
+                            </button>
+                            <button onclick="setTaskStatusTab('Đã Hoàn Thành')" id="status-tab-Đã Hoàn Thành" class="status-tab-btn flex-1 min-w-[120px] py-2 px-3 rounded-xl text-xs font-extrabold text-slate-600 transition-all flex items-center justify-center space-x-1.5">
+                                <span>Hoàn thành</span>
+                                <span id="count-tab-Đã Hoàn Thành" class="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 font-extrabold">0</span>
+                            </button>
+                        </div>
+
+                        <!-- BỘ LỌC TÌM KIẾM & THỜI GIAN -->
                         <div class="ios-card p-4 flex flex-col lg:flex-row items-center justify-between gap-3 sm:gap-4">
                             <div class="flex flex-wrap items-center gap-2 sm:gap-3 w-full lg:w-auto">
                                 <div class="flex items-center space-x-1 bg-slate-300/60 p-1 rounded-2xl overflow-x-auto max-w-full">
-                                    <span class="text-xs font-bold text-slate-700 pl-2 pr-1 hidden sm:inline"><i class="fa-solid fa-eye"></i> Xem:</span>
                                     <button onclick="setTaskFutureView('day')" id="task-view-day" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm whitespace-nowrap">Ngày</button>
                                     <button onclick="setTaskFutureView('week')" id="task-view-week" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700 whitespace-nowrap">Tuần</button>
                                     <button onclick="setTaskFutureView('month')" id="task-view-month" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700 whitespace-nowrap">Tháng</button>
@@ -561,58 +472,11 @@
                                     <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500"><i class="fa-solid fa-search text-xs"></i></span>
                                     <input type="text" id="task-search" placeholder="Tìm kiếm công việc..." class="w-full pl-9 pr-4 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white/90 font-semibold text-slate-900 shadow-xs">
                                 </div>
-
-                                <!-- Bộ lọc Multi-select Chọn Nhân sự -->
-                                <div class="relative inline-block text-left">
-                                    <button type="button" onclick="toggleMultiSelectDropdown('assignee')" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs flex items-center justify-between space-x-2">
-                                        <span id="assignee-filter-label">Tất cả nhân sự</span>
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                                    </button>
-                                    <div id="multi-dropdown-assignee" class="absolute z-20 left-0 mt-1 w-56 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1 max-h-56 overflow-y-auto">
-                                        <!-- Javascript sẽ tự render các lựa chọn có Checkbox -->
-                                    </div>
-                                </div>
-
-                                <!-- Bộ lọc Multi-select Chọn Trạng thái -->
-                                <div class="relative inline-block text-left">
-                                    <button type="button" onclick="toggleMultiSelectDropdown('status')" class="px-3 py-2 rounded-2xl border border-slate-300 text-xs sm:text-sm bg-white/90 font-bold text-slate-900 shadow-xs flex items-center justify-between space-x-2">
-                                        <span id="status-filter-label">Tất cả trạng thái</span>
-                                        <i class="fa-solid fa-chevron-down text-xs"></i>
-                                    </button>
-                                    <div id="multi-dropdown-status" class="absolute z-20 left-0 mt-1 w-52 rounded-2xl shadow-xl bg-white border border-slate-200 hidden custom-scrollbar p-2 space-y-1">
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Urgent" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Urgent (Khẩn cấp 🔥)</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Chưa Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Chưa Thực Hiện</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Đang Thực Hiện" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Đang Thực Hiện</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Đã Hoàn Thành" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Đã Hoàn Thành</span>
-                                        </label>
-                                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                                            <input type="checkbox" value="Huỷ" onchange="handleMultiSelectChange('status')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                                            <span>Huỷ</span>
-                                        </label>
-                                    </div>
-                                </div>
-
                             </div>
                             <button onclick="openTaskModal()" class="w-full lg:w-auto px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-bold rounded-2xl shadow-md transition-all flex items-center justify-center space-x-2 admin-only hidden text-xs sm:text-sm">
                                 <i class="fa-solid fa-plus"></i>
                                 <span>Giao việc mới</span>
                             </button>
-                        </div>
-
-                        <div id="task-future-view-label" class="px-4 py-2.5 bg-indigo-100/70 text-indigo-900 rounded-2xl text-xs font-bold flex items-center space-x-2 border border-indigo-200">
-                            <i class="fa-solid fa-calendar-days text-sm"></i>
-                            <span id="task-view-desc">Đang hiển thị công việc trong Ngày hôm nay</span>
                         </div>
 
                         <div class="ios-card overflow-hidden">
@@ -644,31 +508,14 @@
                                     <button onclick="setScheduleViewMode('month')" id="sched-btn-month" class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700">Tháng</button>
                                 </div>
                                 <div class="flex items-center space-x-1.5 bg-white/90 border border-slate-300/80 rounded-2xl px-2.5 py-1 shadow-xs">
-                                    <button onclick="changeWeek(-1)" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 active:scale-90 text-slate-700 rounded-xl text-xs flex items-center justify-center transition-all font-bold" title="Tuần trước">
+                                    <button onclick="changeWeek(-1)" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 active:scale-90 text-slate-700 rounded-xl text-xs flex items-center justify-center transition-all font-bold">
                                         <i class="fa-solid fa-chevron-left"></i>
                                     </button>
-                                    <input type="date" id="schedule-date-picker" onchange="onScheduleDateChange()" class="px-1 py-1 text-xs font-bold text-slate-900 bg-transparent focus:outline-none">
-                                    <button onclick="changeWeek(1)" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 active:scale-90 text-slate-700 rounded-xl text-xs flex items-center justify-center transition-all font-bold" title="Tuần sau">
+                                    <input type="date" id="schedule-date-picker" onchange="renderSchedule()" class="px-1 py-1 text-xs font-bold text-slate-900 bg-transparent focus:outline-none">
+                                    <button onclick="changeWeek(1)" class="w-7 h-7 bg-slate-200 hover:bg-slate-300 active:scale-90 text-slate-700 rounded-xl text-xs flex items-center justify-center transition-all font-bold">
                                         <i class="fa-solid fa-chevron-right"></i>
                                     </button>
                                 </div>
-                            </div>
-                            <div class="flex flex-wrap items-center gap-2 sm:gap-3 admin-only hidden border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-200 w-full lg:w-auto">
-                                <div class="flex flex-wrap items-center gap-1.5 bg-indigo-100/60 p-2 rounded-2xl border border-indigo-200 w-full sm:w-auto">
-                                    <span class="text-xs font-bold text-indigo-900 w-full sm:w-auto"><i class="fa-solid fa-calendar-range"></i> Khoảng:</span>
-                                    <input type="date" id="template-start-date" class="px-2 py-1 border border-slate-300 rounded-xl text-xs bg-white font-semibold text-slate-950 focus:outline-none flex-1 sm:flex-none">
-                                    <span class="text-xs font-bold text-slate-600">đến</span>
-                                    <input type="date" id="template-end-date" class="px-2 py-1 border border-slate-300 rounded-xl text-xs bg-white font-semibold text-slate-950 focus:outline-none flex-1 sm:flex-none">
-                                    <button onclick="downloadScheduleTemplateCustom()" class="w-full sm:w-auto px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center space-x-1 shadow-xs mt-1 sm:mt-0">
-                                        <i class="fa-solid fa-download"></i>
-                                        <span>Tải Mẫu Excel</span>
-                                    </button>
-                                </div>
-                                <label class="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold rounded-2xl transition-all cursor-pointer flex items-center justify-center space-x-2 shadow-sm">
-                                    <i class="fa-solid fa-file-excel"></i>
-                                    <span>Upload Lịch Mới</span>
-                                    <input type="file" id="schedule-file-input" accept=".xlsx, .xls" onchange="handleScheduleUpload(event)" class="hidden">
-                                </label>
                             </div>
                         </div>
 
@@ -709,13 +556,7 @@
                     <div id="tab-content-notifications" class="tab-content space-y-4 sm:space-y-6 hidden">
                         <div class="ios-card p-4 flex flex-col sm:flex-row items-center justify-between gap-3">
                             <h3 class="text-sm sm:text-base font-bold text-slate-900">Hộp Thư Thông Báo Của Bạn</h3>
-                            <div class="flex items-center space-x-2 w-full sm:w-auto">
-                                <button onclick="requestDeviceNotification()" class="w-full sm:w-auto px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-2xl transition-all shadow-xs flex items-center justify-center space-x-1">
-                                    <i class="fa-solid fa-mobile-screen-button"></i>
-                                    <span>Bật Thông Báo</span>
-                                </button>
-                                <button onclick="markAllNotificationsAsRead()" class="w-full sm:w-auto px-3.5 py-2 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 text-xs font-bold rounded-2xl transition-all whitespace-nowrap shadow-xs">Đánh dấu đã đọc tất cả</button>
-                            </div>
+                            <button onclick="markAllNotificationsAsRead()" class="w-full sm:w-auto px-3.5 py-2 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 text-xs font-bold rounded-2xl transition-all shadow-xs">Đánh dấu đã đọc tất cả</button>
                         </div>
                         <div class="ios-card overflow-hidden">
                             <div id="notifications-list-container" class="divide-y divide-slate-200/60"></div>
@@ -777,70 +618,6 @@
         </div>
     </div>
 
-    <!-- MODAL SỬA CA LÀM VIỆC CHO ADMIN -->
-    <div id="modal-edit-shift" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="ios-card w-full max-w-md overflow-hidden bg-white/95 shadow-2xl">
-            <div class="px-6 py-4 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-900">Sửa Ca Làm Việc Nhân Sự</h3>
-                <button onclick="closeEditShiftModal()" class="text-slate-500 hover:text-slate-800 text-lg active:scale-90 transition-transform"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="form-edit-shift" onsubmit="handleSaveEditShift(event)" class="p-4 sm:p-6 space-y-4">
-                <input type="hidden" id="edit-shift-userid">
-                <input type="hidden" id="edit-shift-date">
-                <div>
-                    <span class="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Nhân sự</span>
-                    <h4 id="edit-shift-username" class="text-sm font-bold text-indigo-700">--</h4>
-                </div>
-                <div>
-                    <span class="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Ngày làm việc</span>
-                    <h4 id="edit-shift-datestr" class="text-sm font-bold text-slate-900">--</h4>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Ca làm việc mới</label>
-                    <select id="edit-shift-value" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
-                        <option value="Ca Sáng">Ca Sáng</option>
-                        <option value="Ca Chiều">Ca Chiều</option>
-                        <option value="Ca Đêm">Ca Đêm</option>
-                        <option value="Hành chính">Hành chính</option>
-                        <option value="Nghỉ (OFF)">Nghỉ (OFF)</option>
-                    </select>
-                </div>
-                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
-                    <button type="button" onclick="closeEditShiftModal()" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-bold text-slate-700 shadow-xs">Hủy</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition-all">Lưu & Thông Báo</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL TẠO YÊU CẦU ĐỔI CA -->
-    <div id="modal-swap" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="ios-card w-full max-w-md overflow-hidden bg-white/95 shadow-2xl">
-            <div class="px-6 py-4 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
-                <h3 class="text-base font-bold text-slate-900">Tạo Yêu Cầu Đổi Ca</h3>
-                <button onclick="closeSwapModal()" class="text-slate-500 hover:text-slate-800 text-lg active:scale-90 transition-transform"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="form-swap" onsubmit="handleSaveSwap(event)" class="p-4 sm:p-6 space-y-4">
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Ngày muốn đổi ca</label>
-                    <input type="date" id="swap-date-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Chọn đồng nghiệp đổi ca</label>
-                    <select id="swap-target-user-select" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs"></select>
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Lý do đổi ca</label>
-                    <textarea id="swap-reason-input" rows="2" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-900 shadow-xs" placeholder="Nhập lý do..."></textarea>
-                </div>
-                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
-                    <button type="button" onclick="closeSwapModal()" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-bold text-slate-700 shadow-xs">Hủy</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition-all">Gửi Yêu Cầu</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
     <!-- MODAL GIAO VIỆC (ADMIN) -->
     <div id="modal-task" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 hidden">
         <div class="ios-card w-full max-w-lg overflow-hidden bg-white/95 shadow-2xl">
@@ -852,91 +629,29 @@
                 <input type="hidden" id="task-id">
                 <div>
                     <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Tiêu đề công việc</label>
-                    <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-slate-900 shadow-xs">
+                    <input type="text" id="task-title-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
                 </div>
                 <div>
                     <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Mô tả chi tiết</label>
-                    <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-semibold text-slate-900 shadow-xs"></textarea>
+                    <textarea id="task-desc-input" rows="3" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-semibold text-slate-900 shadow-xs"></textarea>
                 </div>
-                
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Cấp độ ưu tiên</label>
-                    <select id="task-priority-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-900 shadow-xs">
-                        <option value="Normal">Normal (Bình thường)</option>
-                        <option value="Urgent">Urgent (Khẩn cấp - Ngọn lửa 🔥)</option>
-                    </select>
-                </div>
-
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Ngày bắt đầu</label>
                         <input type="date" id="task-start-date-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Hạn chót (Deadline)</label>
+                        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Deadline</label>
                         <input type="date" id="task-deadline-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
                     </div>
                 </div>
-
-                <div class="relative">
+                <div>
                     <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Người thực hiện</label>
-                    <input type="hidden" id="task-assignee-input" required>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-500"><i class="fa-solid fa-search text-xs"></i></span>
-                        <input type="text" id="task-assignee-search" placeholder="Gõ tên hoặc SĐT để tìm nhân sự..." autocomplete="off" oninput="handleAssigneeSearchInput(this.value)" onfocus="showAssigneeDropdown()" class="w-full pl-10 pr-10 py-2.5 rounded-2xl border border-slate-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-slate-900 shadow-xs">
-                        <span class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 cursor-pointer" onclick="toggleAssigneeDropdown()"><i class="fa-solid fa-chevron-down text-xs"></i></span>
-                    </div>
-                    <div id="assignee-dropdown-list" class="absolute z-20 left-0 right-0 mt-1 bg-white border border-slate-300 rounded-2xl shadow-xl max-h-48 overflow-y-auto hidden custom-scrollbar"></div>
+                    <select id="task-assignee-select" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs"></select>
                 </div>
-
                 <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
                     <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-bold text-slate-700 shadow-xs">Hủy</button>
                     <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-md transition-all">Lưu Công Việc</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- MODAL THÊM / SỬA THÀNH VIÊN -->
-    <div id="modal-user" class="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-md flex items-center justify-center p-4 hidden">
-        <div class="ios-card w-full max-w-md overflow-hidden bg-white/95 shadow-2xl">
-            <div class="px-6 py-4 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between">
-                <h3 id="modal-user-title" class="text-base font-bold text-slate-900">Thêm Thành Viên</h3>
-                <button onclick="closeUserModal()" class="text-slate-500 hover:text-slate-800 text-lg active:scale-90 transition-transform"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="form-user" onsubmit="handleSaveUser(event)" class="p-4 sm:p-6 space-y-4">
-                <input type="hidden" id="user-edit-id">
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Họ và tên</label>
-                    <input type="text" id="user-name-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold text-slate-900 shadow-xs" placeholder="Nguyễn Văn A">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Số điện thoại</label>
-                    <input type="text" id="user-phone-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold text-slate-900 shadow-xs" placeholder="0901234567">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Mật khẩu</label>
-                    <input type="text" id="user-pass-input" required class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm font-bold text-slate-900 shadow-xs" placeholder="123456">
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Vai trò</label>
-                        <select id="user-role-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
-                            <option value="USER">Nhân viên (USER)</option>
-                            <option value="ADMIN">Quản trị (ADMIN)</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Trạng thái</label>
-                        <select id="user-status-input" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
-                            <option value="ACTIVE">Hoạt động</option>
-                            <option value="INACTIVE">Khóa</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
-                    <button type="button" onclick="closeUserModal()" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-bold text-slate-700 shadow-xs">Hủy</button>
-                    <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white text-xs font-bold rounded-2xl shadow-sm transition-all">Lưu Thành Viên</button>
                 </div>
             </form>
         </div>
@@ -952,28 +667,23 @@
             <form id="form-staff-update" onsubmit="handleSaveStaffUpdate(event)" class="p-4 sm:p-6 space-y-4">
                 <input type="hidden" id="staff-task-id">
                 <div>
-                    <span class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">Tên công việc</span>
+                    <span class="block text-[11px] font-extrabold uppercase text-slate-500 mb-1">Tên công việc</span>
                     <h4 id="staff-task-title" class="text-sm font-bold text-indigo-700">--</h4>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-1">Trạng thái thực hiện</label>
+                    <label class="block text-[11px] font-extrabold uppercase text-slate-700 mb-1">Trạng thái thực hiện</label>
                     <select id="staff-status-select" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm bg-white font-bold text-slate-900 shadow-xs">
-                        <option value="Chưa Thực Hiện">Chưa Thực Hiện</option>
-                        <option value="Đang Thực Hiện">Đang Thực Hiện</option>
-                        <option value="Đã Hoàn Thành">Đã Hoàn Thành</option>
-                        <option value="Huỷ">Huỷ</option>
+                        <option value="Chưa Thực Hiện">Chưa thực hiện</option>
+                        <option value="Đang Thực Hiện">Đang thực hiện</option>
+                        <option value="Đã Hoàn Thành">Đã hoàn thành</option>
                     </select>
                 </div>
                 <div>
                     <div class="flex items-center justify-between mb-1">
-                        <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700">Tiến độ công việc</label>
+                        <label class="block text-[11px] font-extrabold uppercase text-slate-700">Tiến độ công việc</label>
                         <span id="staff-progress-val" class="text-xs font-black text-indigo-700">0%</span>
                     </div>
                     <input type="range" id="staff-progress-range" min="0" max="100" value="0" oninput="document.getElementById('staff-progress-val').innerText = this.value + '%'" class="w-full accent-indigo-600">
-                </div>
-                <div>
-                    <label class="block text-[11px] font-extrabold uppercase tracking-wider text-slate-700 mb-1">Ghi chú / Báo cáo</label>
-                    <textarea id="staff-note-input" rows="2" class="w-full px-4 py-2.5 rounded-2xl border border-slate-300 text-sm font-semibold text-slate-900 shadow-xs" placeholder="Nhập ghi chú tiến độ..."></textarea>
                 </div>
                 <div class="pt-4 flex items-center justify-end space-x-3 border-t border-slate-200">
                     <button type="button" onclick="closeStaffUpdateModal()" class="px-4 py-2 rounded-2xl border border-slate-300 text-xs font-bold text-slate-700 shadow-xs">Hủy</button>
@@ -983,7 +693,7 @@
         </div>
     </div>
 
-    <!-- FIREBASE & LOGIC CHÍNH -->
+    <!-- LOGIC SYSTEM & CLOUD SYNC OPTIMIZED -->
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyDicItwzwlQWox8pL7qDleljWAyY3N56jk",
@@ -1005,81 +715,25 @@
         let cloudSchedules = {}; 
         let cloudSwapRequests = []; 
         let cloudNotifications = [];
-        let highlightedStaff = {}; 
-        let highlightedTasks = {}; 
-        let statusChartInstance = null;
-        let performanceChartInstance = null;
-        let trendChartInstance = null;
-        let scheduleViewMode = 'day'; 
-        let taskFutureViewMode = 'day';
-        let selectedAssigneeId = '';
-        let currentTab = 'dashboard';
 
-        const defaultUsers = [
-            { id: 'shp', name: 'Sơn Hoài Phương', phone: 'shp', password: '123', role: 'ADMIN', status: 'ACTIVE', email: 'shp@company.com', nickname: 'SuperAdmin', avatar: '', order: 0 },
-            { id: 'admin_1', name: 'Quản trị viên', phone: '0901111111', password: '123456', role: 'ADMIN', status: 'ACTIVE', email: 'admin@company.com', nickname: 'Boss', avatar: '', order: 1 },
-            { id: 'user_1', name: 'Nguyễn Văn Minh', phone: '0902222222', password: '123456', role: 'USER', status: 'ACTIVE', email: 'minhnv@company.com', nickname: 'MinPro', avatar: '', order: 2 },
-            { id: 'user_2', name: 'Trần Thị Hoa', phone: '0903333333', password: '123456', role: 'USER', status: 'ACTIVE', email: 'hoatt@company.com', nickname: 'HoaCute', avatar: '', order: 3 }
-        ];
+        let currentTab = 'dashboard';
+        let taskFutureViewMode = 'all';
+        let activeTaskStatusTab = 'ALL'; // Trạng tháiTab lọc: ALL, Chưa Thực Hiện, Đang Thực Hiện, Quá Hạn, Đã Hoàn Thành
 
         window.addEventListener('DOMContentLoaded', () => {
             initOptimizedListeners();
-            
-            const todayStr = new Date().toISOString().split('T')[0];
-            const dp = document.getElementById('schedule-date-picker');
-            if (dp) dp.value = todayStr;
-
-            const startDateInput = document.getElementById('template-start-date');
-            const endDateInput = document.getElementById('template-end-date');
-            if (startDateInput) startDateInput.value = todayStr;
-            if (endDateInput) {
-                const next7Days = new Date();
-                next7Days.setDate(next7Days.getDate() + 6);
-                endDateInput.value = next7Days.toISOString().split('T')[0];
-            }
-
             checkAuth();
-            setInterval(updateClock, 1000);
-            updateClock();
+            setInterval(() => {
+                const el = document.getElementById('current-time-display');
+                if (el) el.innerText = new Date().toLocaleString('vi-VN');
+            }, 1000);
 
             const searchInput = document.getElementById('task-search');
             if (searchInput) {
-                searchInput.oninput = debounce(() => {
-                    renderTasks();
-                }, 300);
+                searchInput.oninput = debounce(() => renderTasks(), 250);
             }
-
-            // Đóng menu chọn multi-select khi click ra bên ngoài
-            document.addEventListener('click', function(e) {
-                const isAssigneeClick = e.target.closest('#multi-dropdown-assignee') || e.target.closest('button[onclick*="assignee"]');
-                const isStatusClick = e.target.closest('#multi-dropdown-status') || e.target.closest('button[onclick*="status"]');
-                
-                if (!isAssigneeClick) {
-                    const dropdown = document.getElementById('multi-dropdown-assignee');
-                    if (dropdown) dropdown.classList.add('hidden');
-                }
-                if (!isStatusClick) {
-                    const dropdown = document.getElementById('multi-dropdown-status');
-                    if (dropdown) dropdown.classList.add('hidden');
-                }
-            });
-
-            setTimeout(hideLoading, 1200);
+            setTimeout(hideLoading, 800);
         });
-
-        function toggleMobileSidebar(isOpen) {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (!sidebar || !backdrop) return;
-
-            if (isOpen) {
-                sidebar.classList.remove('-translate-x-full');
-                backdrop.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-            }
-        }
 
         function hideLoading() {
             const loader = document.getElementById('global-loading');
@@ -1087,11 +741,6 @@
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 300);
             }
-        }
-
-        function updateClock() {
-            const el = document.getElementById('current-time-display');
-            if (el) el.innerText = new Date().toLocaleString('vi-VN');
         }
 
         function showToast(msg, isError = false) {
@@ -1107,97 +756,40 @@
             }, 3000);
         }
 
-        async function requestDeviceNotification() {
-            if (!('Notification' in window)) {
-                showToast('Trình duyệt không hỗ trợ thông báo đẩy!', true);
-                return;
-            }
-
-            try {
-                const permission = await Notification.requestPermission();
-                if (permission === 'granted') {
-                    showToast('Đã cấp quyền nhận thông báo thiết bị!');
-                    
-                    if (firebase.messaging.isSupported()) {
-                        const messaging = firebase.messaging();
-                        const token = await messaging.getToken();
-                        if (token) {
-                            if (currentUser) {
-                                await db.collection('users').doc(currentUser.id).update({
-                                    fcmToken: token,
-                                    fcmUpdatedAt: Date.now()
-                                });
-                                showToast('Đã lưu token thông báo đẩy vào tài khoản!');
-                            }
-                        }
-                    }
-                } else if (permission === 'denied') {
-                    showToast('Bạn đã từ chối quyền nhận thông báo.', true);
-                }
-            } catch (err) {
-                showToast('Lỗi kích hoạt thông báo đẩy!', true);
+        function toggleMobileSidebar(isOpen) {
+            const sidebar = document.getElementById('mobile-sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (!sidebar || !backdrop) return;
+            if (isOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
             }
         }
 
+        // Tối ưu Listeners Real-time đồng bộ Cloud
         function initOptimizedListeners() {
             db.collection('users').onSnapshot(snapshot => {
                 cloudUsers = [];
                 snapshot.forEach(doc => cloudUsers.push({ id: doc.id, ...doc.data() }));
-                if (cloudUsers.length === 0) {
-                    defaultUsers.forEach(u => db.collection('users').doc(u.id).set(u));
-                    cloudUsers = [...defaultUsers];
-                }
-                populateAssignees();
-                renderUsers();
-                if (currentUser) {
-                    let updatedMe = cloudUsers.find(u => u.id === currentUser.id);
-                    if (updatedMe) {
-                        updatedMe.password = updatedMe.password || currentUser.password;
-                        currentUser = updatedMe;
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-                        updateUserSidebarUI();
-                    } else {
-                        handleLogout();
-                        showToast('Tài khoản đã bị xóa khỏi hệ thống!', true);
-                    }
-                }
+                populateAssigneesSelect();
             });
 
-            db.collection('tasks')
-              .orderBy('createdAt', 'desc')
-              .limit(100)
-              .onSnapshot(snapshot => {
+            db.collection('tasks').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
                 cloudTasks = [];
                 snapshot.forEach(doc => cloudTasks.push({ id: doc.id, ...doc.data() }));
+                updateTaskCounts();
                 renderTasks();
                 renderDashboard();
-            }, err => {});
+            });
 
             db.collection('schedules').onSnapshot(snapshot => {
                 cloudSchedules = {};
                 snapshot.forEach(doc => { cloudSchedules[doc.id] = doc.data(); });
-                renderSchedule();
-            }, err => {});
-
-            db.collection('shiftSwaps').onSnapshot(snapshot => {
-                cloudSwapRequests = [];
-                snapshot.forEach(doc => { cloudSwapRequests.push({ id: doc.id, ...doc.data() }); });
-                renderSwapRequests();
-                renderShiftSwapBadge();
-            }, err => {});
-
-            db.collection('notifications').onSnapshot(snapshot => {
-                cloudNotifications = [];
-                snapshot.forEach(doc => { cloudNotifications.push({ id: doc.id, ...doc.data() }); });
-                renderNotificationsBadge();
-                renderNotificationsList();
-            }, err => {});
-
-            db.collection('logs').limit(50).onSnapshot(snapshot => {
-                cloudLogs = [];
-                snapshot.forEach(doc => cloudLogs.push({ id: doc.id, ...doc.data() }));
-                renderLogs();
-            }, err => {});
+                if (currentTab === 'schedule') renderSchedule();
+            });
         }
 
         function debounce(func, wait) {
@@ -1208,669 +800,98 @@
             };
         }
 
-        async function addLog(action) {
-            await db.collection('logs').add({
-                timeFormatted: new Date().toLocaleString('vi-VN'),
-                timestamp: Date.now(),
-                user: currentUser ? (currentUser.nickname || currentUser.name) : 'Hệ thống',
-                action
-            });
-        }
-
-        async function sendNotification(userId, title, message) {
-            await db.collection('notifications').add({
-                userId, title, message, read: false,
-                createdAt: Date.now(),
-                timeFormatted: new Date().toLocaleString('vi-VN')
-            });
-        }
-
         function checkAuth() {
             const saved = localStorage.getItem(STORAGE_KEY);
             const viewAuth = document.getElementById('view-auth');
             const viewMain = document.getElementById('view-main');
 
             if (saved) {
-                try {
-                    currentUser = JSON.parse(saved);
-                    let existUser = cloudUsers.find(u => u.id === currentUser.id);
-                    if (currentUser.id !== 'shp') {
-                        if (!existUser || existUser.status === 'INACTIVE') {
-                            handleLogout();
-                            showToast('Tài khoản của bạn đã bị khóa hoặc không tồn tại!', true);
-                            return;
-                        }
-                    } else if (existUser && existUser.status === 'INACTIVE') {
-                        handleLogout();
-                        showToast('Tài khoản tối cao đã bị khóa!', true);
-                        return;
-                    }
+                currentUser = JSON.parse(saved);
+                viewAuth.classList.add('hidden');
+                viewMain.classList.remove('hidden');
 
-                    viewAuth.classList.add('hidden');
-                    viewMain.classList.remove('hidden');
-                    updateUserSidebarUI();
+                document.getElementById('user-name-disp').innerText = currentUser.name;
+                document.getElementById('user-role-badge').innerText = currentUser.role;
 
-                    const isSuperAdminOrAdmin = (currentUser.id === 'shp' || currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN');
+                const isAdmin = (currentUser.role === 'ADMIN' || currentUser.id === 'shp');
+                document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
 
-                    document.querySelectorAll('.admin-only').forEach(el => {
-                        el.classList.toggle('hidden', !isSuperAdminOrAdmin);
-                    });
-
-                    const adminDash = document.getElementById('admin-advanced-dashboard');
-                    if (adminDash) {
-                        adminDash.classList.toggle('hidden', !isSuperAdminOrAdmin);
-                    }
-
-                    switchTab('dashboard');
-                    renderNotificationsBadge();
-                    renderShiftSwapBadge();
-                } catch (err) {
-                    handleLogout();
-                }
+                switchTab('dashboard');
             } else {
                 viewAuth.classList.remove('hidden');
                 viewMain.classList.add('hidden');
             }
         }
 
-        function updateUserSidebarUI() {
-            if (!currentUser) return;
-            const displayName = currentUser.nickname ? `${currentUser.name} (${currentUser.nickname})` : currentUser.name;
-            document.getElementById('user-name-disp').innerText = displayName;
-            document.getElementById('user-role-badge').innerText = currentUser.role;
-            
-            const avatarContainer = document.getElementById('user-avatar-container');
-            if (currentUser.avatar) {
-                avatarContainer.innerHTML = `<img src="${currentUser.avatar}" alt="Avatar" class="w-full h-full object-cover">`;
-            } else {
-                avatarContainer.innerHTML = `<span id="user-avatar-text">${currentUser.name.charAt(0).toUpperCase()}</span>`;
-            }
-        }
-
         function handleLogin(e) {
-            if (e) e.preventDefault();
+            e.preventDefault();
             const phone = document.getElementById('login-phone').value.trim();
             const pass = document.getElementById('login-password').value;
 
             let user = cloudUsers.find(u => (u.phone === phone || u.id === phone) && u.password === pass);
-            if (!user) user = defaultUsers.find(u => (u.phone === phone || u.id === phone) && u.password === pass);
-
-            if (!user) {
-                showToast('Số điện thoại hoặc mật khẩu không chính xác!', true);
-                return;
+            if (!user && phone === 'shp' && pass === '123') {
+                user = { id: 'shp', name: 'Sơn Hoài Phương', role: 'ADMIN', phone: 'shp' };
             }
 
-            if (user.status === 'INACTIVE') {
-                showToast('Tài khoản này đã bị khóa!', true);
+            if (!user) {
+                showToast('Thông tin đăng nhập không hợp lệ!', true);
                 return;
             }
 
             currentUser = user;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-            addLog(`Đăng nhập hệ thống`);
             showToast(`Chào mừng ${user.name}!`);
             checkAuth();
         }
 
         function handleLogout() {
-            addLog(`Đăng xuất khỏi hệ thống`);
             localStorage.removeItem(STORAGE_KEY);
             currentUser = null;
             checkAuth();
-            showToast('Đã đăng xuất.');
         }
 
-        function toggleStaffHighlight(userId) {
-            highlightedStaff[userId] = !highlightedStaff[userId];
-            renderSchedule();
-        }
-
-        function toggleTaskHighlight(taskId) {
-            highlightedTasks[taskId] = !highlightedTasks[taskId];
-            renderTasks();
-        }
-
-        function renderNotificationsBadge() {
-            if (!currentUser) return;
-            const myUnread = cloudNotifications.filter(n => n.userId === currentUser.id && !n.read).length;
-            const badge = document.getElementById('notif-badge');
-            if (badge) {
-                if (myUnread > 0) {
-                    badge.innerText = myUnread;
-                    badge.classList.remove('hidden');
-                } else {
-                    badge.classList.add('hidden');
-                }
-            }
-        }
-
-        function renderShiftSwapBadge() {
-            if (!currentUser) return;
-            const badge = document.getElementById('shift-swap-badge');
-            if (!badge) return;
-
-            let count = 0;
-            if (currentUser.role === 'ADMIN') {
-                count = cloudSwapRequests.filter(s => s.peerStatus === 'ACCEPTED' && s.adminStatus === 'PENDING').length;
-            } else {
-                count = cloudSwapRequests.filter(s => s.targetUserId === currentUser.id && s.peerStatus === 'PENDING').length;
-            }
-
-            if (count > 0) {
-                badge.innerText = count;
-                badge.classList.remove('hidden');
-            } else {
-                badge.classList.add('hidden');
-            }
-        }
-
-        function renderNotificationsList() {
-            const container = document.getElementById('notifications-list-container');
-            if (!container || !currentUser) return;
-
-            let myNotifs = cloudNotifications.filter(n => n.userId === currentUser.id);
-            myNotifs.sort((a, b) => b.createdAt - a.createdAt);
-
-            let fragment = document.createDocumentFragment();
-            let wrapper = document.createElement('div');
-
-            if (myNotifs.length === 0) {
-                wrapper.innerHTML = `<div class="p-8 text-center text-slate-500 font-semibold">Không có thông báo nào</div>`;
-            } else {
-                let html = '';
-                myNotifs.forEach(n => {
-                    html += `
-                        <div class="p-4 flex items-start justify-between gap-4 ${n.read ? 'bg-white/60' : 'bg-indigo-100/60'} transition-colors">
-                            <div class="flex items-start space-x-3">
-                                <div class="w-10 h-10 rounded-2xl ${n.read ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white'} flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-xs">
-                                    <i class="fa-solid fa-bell"></i>
-                                </div>
-                                <div>
-                                    <h4 class="text-xs sm:text-sm font-bold text-slate-950">${escapeHtml(n.title)}</h4>
-                                    <p class="text-xs font-semibold text-slate-800 mt-0.5">${escapeHtml(n.message)}</p>
-                                    <span class="text-[10px] text-slate-500 mt-1.5 block font-bold">${n.timeFormatted}</span>
-                                </div>
-                            </div>
-                            ${!n.read ? `<button onclick="markNotificationAsRead('${n.id}')" class="text-xs text-indigo-700 font-extrabold hover:underline whitespace-nowrap">Đọc</button>` : ''}
-                        </div>
-                    `;
-                });
-                wrapper.innerHTML = html;
-            }
-            fragment.appendChild(wrapper);
-            container.innerHTML = '';
-            container.appendChild(fragment);
-        }
-
-        async function markNotificationAsRead(id) {
-            await db.collection('notifications').doc(id).update({ read: true });
-        }
-
-        async function markAllNotificationsAsRead() {
-            if (!currentUser) return;
-            const batch = db.batch();
-            cloudNotifications.filter(n => n.userId === currentUser.id && !n.read).forEach(n => {
-                const ref = db.collection('notifications').doc(n.id);
-                batch.update(ref, { read: true });
-            });
-            await batch.commit();
-            showToast('Đã đánh dấu tất cả thông báo là đã đọc.');
-        }
-
-        function loadProfileSettings() {
-            if (!currentUser) return;
-            document.getElementById('profile-name-input').value = currentUser.name || '';
-            document.getElementById('profile-nickname-input').value = currentUser.nickname || '';
-            document.getElementById('profile-phone-input').value = currentUser.phone || '';
-            document.getElementById('profile-email-input').value = currentUser.email || '';
-            document.getElementById('profile-avatar-input').value = currentUser.avatar || '';
-            document.getElementById('profile-pass-input').value = '';
-            updateAvatarPreview(currentUser.avatar || '');
-        }
-
-        function updateAvatarPreview(url) {
-            const previewContainer = document.getElementById('profile-avatar-preview');
-            if (!previewContainer) return;
-            if (url && url.trim() !== '') {
-                previewContainer.innerHTML = `<img src="${url}" alt="Avatar" class="w-full h-full object-cover">`;
-            } else {
-                const initial = (currentUser && currentUser.name) ? currentUser.name.charAt(0).toUpperCase() : 'A';
-                previewContainer.innerHTML = `<span id="profile-preview-text">${initial}</span>`;
-            }
-        }
-
-        function handleImageUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const base64String = evt.target.result;
-                document.getElementById('profile-avatar-input').value = base64String;
-                updateAvatarPreview(base64String);
-            };
-            reader.readAsDataURL(file);
-        }
-
-        async function handleSaveProfileSettings(e) {
-            e.preventDefault();
-            if (!currentUser) return;
-
-            const name = document.getElementById('profile-name-input').value.trim();
-            const nickname = document.getElementById('profile-nickname-input').value.trim();
-            const phone = document.getElementById('profile-phone-input').value.trim();
-            const email = document.getElementById('profile-email-input').value.trim();
-            const avatar = document.getElementById('profile-avatar-input').value.trim();
-            const newPass = document.getElementById('profile-pass-input').value;
-
-            let updateData = { name, nickname, phone, email, avatar };
-            if (newPass && newPass.trim() !== '') {
-                updateData.password = newPass;
-            }
-
-            try {
-                await db.collection('users').doc(currentUser.id).update(updateData);
-                currentUser = { ...currentUser, ...updateData };
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
-                updateUserSidebarUI();
-                await addLog(`Cập nhật thông tin tài khoản cá nhân`);
-                showToast('Cập nhật hồ sơ thành công!');
-            } catch (err) {
-                showToast('Lỗi khi cập nhật hồ sơ!', true);
-            }
-        }
-
-        function filterTasksByTime(tasks, filterType) {
-            const now = new Date();
-            const todayStr = now.toISOString().split('T')[0];
-
-            return tasks.filter(t => {
-                const deadline = t.deadline || '';
-                const startDate = t.startDate || '';
-                const createdAt = t.createdAt || '';
-
-                if (filterType === 'today') {
-                    return (startDate && startDate <= todayStr && deadline >= todayStr) || deadline === todayStr || createdAt === todayStr;
-                }
-                if (filterType === 'week') {
-                    const day = now.getDay();
-                    const diffToMon = now.getDate() - day + (day === 0 ? -6 : 1);
-                    const mon = new Date(new Date().setDate(diffToMon));
-                    mon.setHours(0, 0, 0, 0);
-                    const sun = new Date(mon);
-                    sun.setDate(mon.getDate() + 6);
-                    sun.setHours(23, 59, 59, 999);
-
-                    const targetDate = deadline ? new Date(deadline) : (createdAt ? new Date(createdAt) : null);
-                    return targetDate && targetDate >= mon && targetDate <= sun;
-                }
-                if (filterType === 'month') {
-                    const currentMonth = now.getMonth();
-                    const currentYear = now.getFullYear();
-                    const targetDate = deadline ? new Date(deadline) : (createdAt ? new Date(createdAt) : null);
-                    return targetDate && targetDate.getMonth() === currentMonth && targetDate.getFullYear() === currentYear;
-                }
-                if (filterType === 'year') {
-                    const currentYear = now.getFullYear();
-                    const targetDate = deadline ? new Date(deadline) : (createdAt ? new Date(createdAt) : null);
-                    return targetDate && targetDate.getFullYear() === currentYear;
-                }
-                if (filterType === 'upcoming') {
-                    if (t.status === 'Đã Hoàn Thành' || t.status === 'Huỷ' || !deadline) return false;
-                    const diffDays = Math.ceil((new Date(deadline) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
-                    return diffDays >= 0 && diffDays <= 3;
-                }
-                if (filterType === 'overdue') {
-                    if (t.status === 'Đã Hoàn Thành' || !deadline) return false;
-                    return deadline < todayStr;
-                }
-                return true;
-            });
-        }
-
-        function renderDashboard() {
-            const filterType = document.getElementById('dashboard-time-filter')?.value || 'all';
-            let tasksToCalc = cloudTasks;
-
-            if (currentUser && currentUser.role !== 'ADMIN') {
-                tasksToCalc = cloudTasks.filter(t => t.assigneeId === currentUser.id);
-            }
-
-            const filteredTasks = filterTasksByTime(tasksToCalc, filterType);
-
-            const total = filteredTasks.length;
-            const doing = filteredTasks.filter(t => t.status === 'Đang Thực Hiện').length;
-            const done = filteredTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
-            const todayStr = new Date().toISOString().split('T')[0];
-            const overdue = filteredTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
-
-            document.getElementById('stat-total').innerText = total;
-            document.getElementById('stat-doing').innerText = doing;
-            document.getElementById('stat-done').innerText = done;
-            document.getElementById('stat-overdue').innerText = overdue;
-
-            const completionRate = total > 0 ? Math.round((done / total) * 100) : 0;
-            document.getElementById('stat-completion-rate').innerText = completionRate + '%';
-
-            if (currentUser && currentUser.role === 'ADMIN') {
-                renderStatusChart(filteredTasks);
-                renderPerformanceChart(filteredTasks);
-                renderTrendChart(filteredTasks);
-                renderAdminTopPerformersAndRisks(filteredTasks);
-            }
-        }
-
-        function renderStatusChart(tasksData) {
-            const ctx = document.getElementById('statusChart')?.getContext('2d');
-            if (!ctx) return;
-            const counts = [
-                tasksData.filter(t => t.status === 'Chưa Thực Hiện').length,
-                tasksData.filter(t => t.status === 'Đang Thực Hiện').length,
-                tasksData.filter(t => t.status === 'Đã Hoàn Thành').length,
-                tasksData.filter(t => t.status === 'Huỷ').length
-            ];
-
-            if (statusChartInstance) statusChartInstance.destroy();
-            statusChartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Chưa Thực Hiện', 'Đang Thực Hiện', 'Đã Hoàn Thành', 'Huỷ'],
-                    datasets: [{ data: counts, backgroundColor: ['#8e8e93', '#ff9500', '#34c759', '#ff3b30'] }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function renderPerformanceChart(tasksData) {
-            const ctx = document.getElementById('performanceChart')?.getContext('2d');
-            if (!ctx) return;
-            const names = cloudUsers.map(u => u.nickname || u.name);
-            const workloadCounts = cloudUsers.map(u => tasksData.filter(t => t.assigneeId === u.id).length);
-
-            if (performanceChartInstance) performanceChartInstance.destroy();
-            performanceChartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: names,
-                    datasets: [{ label: 'Số việc giao', data: workloadCounts, backgroundColor: '#007aff', borderRadius: 8 }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function renderTrendChart(tasksData) {
-            const ctx = document.getElementById('trendChart')?.getContext('2d');
-            if (!ctx) return;
-            if (trendChartInstance) trendChartInstance.destroy();
-            trendChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần hiện tại'],
-                    datasets: [
-                        { label: 'Giao việc', data: [12, 19, 15, tasksData.length], borderColor: '#007aff', tension: 0.35 },
-                        { label: 'Hoàn thành', data: [10, 15, 14, tasksData.filter(t => t.status === 'Đã Hoàn Thành').length], borderColor: '#34c759', tension: 0.35 }
-                    ]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function renderAdminTopPerformersAndRisks(tasksData) {
-            const tbody = document.getElementById('admin-top-performers-body');
-            if (tbody) {
-                let html = '';
-                cloudUsers.forEach(u => {
-                    let uTasks = tasksData.filter(t => t.assigneeId === u.id);
-                    let doneCount = uTasks.filter(t => t.status === 'Đã Hoàn Thành').length;
-                    let doingCount = uTasks.filter(t => t.status === 'Đang Thực Hiện').length;
-                    let workloadBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-emerald-100 text-emerald-800">Ổn định</span>`;
-                    if (doingCount > 5) workloadBadge = `<span class="px-2 py-0.5 rounded-md text-[10px] font-extrabold bg-rose-100 text-rose-800">Quá tải (${doingCount})</span>`;
-
-                    html += `
-                        <tr class="hover:bg-slate-200/50 transition-colors">
-                            <td class="py-2.5 px-3 font-bold text-slate-950">${escapeHtml(u.nickname ? `${u.name} (${u.nickname})` : u.name)}</td>
-                            <td class="py-2.5 px-3 text-center font-black text-emerald-700">${doneCount}</td>
-                            <td class="py-2.5 px-3 text-center font-black text-amber-700">${doingCount}</td>
-                            <td class="py-2.5 px-3 text-right">${workloadBadge}</td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html;
-            }
-
-            const riskContainer = document.getElementById('admin-risk-alerts-container');
-            if (riskContainer) {
-                const now = new Date();
-                const todayStr = now.toISOString().split('T')[0];
-                let riskTasks = tasksData.filter(t => {
-                    if (t.status === 'Đã Hoàn Thành' || t.status === 'Huỷ' || !t.deadline) return false;
-                    let diffDays = Math.ceil((new Date(t.deadline) - new Date(todayStr)) / (1000 * 60 * 60 * 24));
-                    return diffDays <= 1;
-                });
-
-                let rHtml = '';
-                if (riskTasks.length === 0) {
-                    rHtml = `<div class="p-4 text-center text-slate-500 text-xs font-semibold">Không có rủi ro trễ hạn trong 24h tới</div>`;
-                } else {
-                    riskTasks.forEach(t => {
-                        rHtml += `
-                            <div class="p-3 bg-rose-100/70 border border-rose-300 rounded-2xl flex items-center justify-between text-xs">
-                                <div>
-                                    <span class="font-bold text-rose-950 block">${escapeHtml(t.title)}</span>
-                                    <span class="text-rose-700 font-bold">Deadline: ${t.deadline}</span>
-                                </div>
-                                <button onclick="openStaffUpdateModal('${t.id}')" class="px-3 py-1 bg-rose-600 active:scale-95 text-white rounded-xl font-bold transition-all shadow-xs">Xử lý</button>
-                            </div>
-                        `;
-                    });
-                }
-                riskContainer.innerHTML = rHtml;
-            }
-        }
-
-        function handleStatCardClick(statType) {
-            if (!currentUser) return;
-            
-            const filterType = document.getElementById('dashboard-time-filter')?.value || 'all';
-            let tasksToCalc = cloudTasks;
-            if (currentUser.role !== 'ADMIN') {
-                tasksToCalc = cloudTasks.filter(t => t.assigneeId === currentUser.id);
-            }
-            let filteredTasks = filterTasksByTime(tasksToCalc, filterType);
-            const todayStr = new Date().toISOString().split('T')[0];
-
-            let targetTasks = [];
-            let titleText = "";
-
-            if (statType === 'total') {
-                targetTasks = filteredTasks;
-                titleText = "Tất cả công việc tương ứng";
-            } else if (statType === 'doing') {
-                targetTasks = filteredTasks.filter(t => t.status === 'Đang Thực Hiện');
-                titleText = "Danh sách công việc: Đang thực hiện";
-            } else if (statType === 'done') {
-                targetTasks = filteredTasks.filter(t => t.status === 'Đã Hoàn Thành');
-                titleText = "Danh sách công việc: Đã hoàn thành";
-            } else if (statType === 'overdue') {
-                targetTasks = filteredTasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành');
-                titleText = "Danh sách công việc: Quá hạn";
-            }
-
-            const section = document.getElementById('staff-clicked-task-section');
-            const titleEl = document.getElementById('staff-clicked-title');
-            const tbody = document.getElementById('staff-clicked-tasks-body');
-            
-            if (section && titleEl && tbody) {
-                titleEl.innerHTML = `<i class="fa-solid fa-list-check text-indigo-600"></i> <span>${titleText} (${targetTasks.length})</span>`;
-                
-                let html = '';
-                targetTasks.forEach(t => {
-                    let badgeColor = 'bg-slate-200 text-slate-800 font-bold';
-                    if (t.status === 'Đang Thực Hiện') badgeColor = 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
-                    if (t.status === 'Đã Hoàn Thành') badgeColor = 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold';
-                    if (t.status === 'Huỷ') badgeColor = 'bg-rose-100 text-rose-900 border border-rose-300 font-bold';
-
-                    html += `
-                        <tr class="hover:bg-slate-200/50 transition-colors">
-                            <td class="py-3 px-4 sm:px-6"><span class="font-bold text-slate-950 block">${escapeHtml(t.title)}</span><span class="text-[11px] font-medium text-slate-700">${escapeHtml(t.description || '')}</span></td>
-                            <td class="py-3 px-3 sm:px-4"><span class="px-2.5 py-1 rounded-full text-[11px] ${badgeColor}">${t.status}</span></td>
-                            <td class="py-3 px-3 sm:px-4">
-                                <div class="flex items-center space-x-1.5">
-                                    <div class="w-12 sm:w-16 bg-slate-300 rounded-full h-2 overflow-hidden"><div class="bg-indigo-600 h-2 rounded-full" style="width: ${t.progress || 0}%"></div></div>
-                                    <span class="text-[11px] font-bold text-slate-800">${t.progress || 0}%</span>
-                                </div>
-                            </td>
-                            <td class="py-3 px-3 sm:px-4 text-[11px] font-bold text-slate-900">${t.deadline || '--'}</td>
-                            <td class="py-3 px-4 sm:px-6 text-right">
-                                <button onclick="openStaffUpdateModal('${t.id}')" class="px-2.5 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-xs font-bold transition-all shadow-xs">Cập nhật</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-                tbody.innerHTML = html || `<tr><td colspan="5" class="py-6 text-center text-slate-500 font-semibold">Không có công việc nào trong mục này</td></tr>`;
-                section.classList.remove('hidden');
-                section.scrollIntoView({ behavior: 'smooth' });
-            }
-        }
-
-        function closeStaffClickedTaskList() {
-            const section = document.getElementById('staff-clicked-task-section');
-            if (section) section.classList.add('hidden');
-        }
-
-        // --- TASKS ---
+        // CHUYỂN CỘT THỜI GIAN/BỘ LỌC CÔNG VIỆC
         function setTaskFutureView(mode) {
             taskFutureViewMode = mode;
             ['day', 'week', 'month', 'all'].forEach(m => {
                 const btn = document.getElementById(`task-view-${m}`);
-                if (btn) {
-                    btn.className = m === mode ? "px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm" : "px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700";
-                }
+                if (btn) btn.className = m === mode ? "px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm whitespace-nowrap" : "px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700 whitespace-nowrap";
             });
-
-            const descEl = document.getElementById('task-view-desc');
-            if (descEl) {
-                if (mode === 'day') descEl.innerText = "Đang hiển thị công việc trong Ngày hôm nay";
-                if (mode === 'week') descEl.innerText = "Đang hiển thị công việc trong Tuần này";
-                if (mode === 'month') descEl.innerText = "Đang hiển thị công việc trong Tháng này";
-                if (mode === 'all') descEl.innerText = "Đang hiển thị toàn bộ công việc (Tất cả)";
-            }
             renderTasks();
         }
 
-        function populateAssignees() {
-            // Render giao diện Multi-select Dropdown cho Nhân sự
-            const container = document.getElementById('multi-dropdown-assignee');
-            if (container) {
-                let html = '';
-                cloudUsers.forEach(u => {
-                    html += `
-                        <label class="multi-select-option flex items-center space-x-2 p-1.5 rounded-xl cursor-pointer text-xs font-bold text-slate-800">
-                            <input type="checkbox" value="${u.id}" onchange="handleMultiSelectChange('assignee')" class="rounded text-indigo-600 focus:ring-indigo-500">
-                            <span>${escapeHtml(u.name)}</span>
-                        </label>
-                    `;
-                });
-                container.innerHTML = html;
-            }
-
-            const swapTarget = document.getElementById('swap-target-user-select');
-            if (swapTarget && currentUser) {
-                let htmlSwap = '';
-                cloudUsers.filter(u => u.id !== currentUser.id).forEach(u => {
-                    htmlSwap += `<option value="${u.id}">${u.name}</option>`;
-                });
-                swapTarget.innerHTML = htmlSwap;
-            }
-        }
-
-        // Bổ sung các hàm xử lý Multi-Select Dropdown
-        function toggleMultiSelectDropdown(type) {
-            const dropdown = document.getElementById(`multi-dropdown-${type}`);
-            if (dropdown) dropdown.classList.toggle('hidden');
-        }
-
-        function handleMultiSelectChange(type) {
-            const checkboxes = document.querySelectorAll(`#multi-dropdown-${type} input[type="checkbox"]:checked`);
-            const label = document.getElementById(`${type}-filter-label`);
-            if (label) {
-                if (checkboxes.length === 0) {
-                    label.innerText = type === 'assignee' ? 'Tất cả nhân sự' : 'Tất cả trạng thái';
-                } else {
-                    label.innerText = `Đã chọn (${checkboxes.length})`;
-                }
-            }
+        // BỔ SUNG THANH TRẠNG THÁI CÔNG VIỆC THEO THỨ TỰ: CHƯA THỰC HIỆN, ĐANG THỰC HIỆN, QUÁ HẠN, HOÀN THÀNH
+        function setTaskStatusTab(status) {
+            activeTaskStatusTab = status;
+            document.querySelectorAll('.status-tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.getElementById(`status-tab-${status}`);
+            if (activeBtn) activeBtn.classList.add('active');
             renderTasks();
         }
 
-        function showAssigneeDropdown() {
-            renderAssigneeDropdownOptions(cloudUsers);
+        function filterTaskFromStat(status) {
+            switchTab('tasks');
+            setTaskStatusTab(status);
         }
 
-        function hideAssigneeDropdown() {
-            setTimeout(() => {
-                const dropdown = document.getElementById('assignee-dropdown-list');
-                if (dropdown) dropdown.classList.add('hidden');
-            }, 200);
-        }
-
-        function toggleAssigneeDropdown() {
-            const dropdown = document.getElementById('assignee-dropdown-list');
-            if (!dropdown) return;
-            if (dropdown.classList.contains('hidden')) {
-                renderAssigneeDropdownOptions(cloudUsers);
-                dropdown.classList.remove('hidden');
-            } else {
-                dropdown.classList.add('hidden');
-            }
-        }
-
-        function handleAssigneeSearchInput(keyword) {
-            const query = keyword.toLowerCase().trim();
-            const filtered = cloudUsers.filter(u => 
-                u.name.toLowerCase().includes(query) || 
-                (u.phone && u.phone.toLowerCase().includes(query)) ||
-                (u.nickname && u.nickname.toLowerCase().includes(query))
-            );
-            renderAssigneeDropdownOptions(filtered);
-            const dropdown = document.getElementById('assignee-dropdown-list');
-            if (dropdown) dropdown.classList.remove('hidden');
-        }
-
-        function renderAssigneeDropdownOptions(usersList) {
-            const dropdown = document.getElementById('assignee-dropdown-list');
-            if (!dropdown) return;
-            
-            if (usersList.length === 0) {
-                dropdown.innerHTML = `<div class="p-3 text-xs text-slate-500 text-center font-bold">Không tìm thấy nhân sự</div>`;
-                return;
+        function updateTaskCounts() {
+            const todayStr = new Date().toISOString().split('T')[0];
+            let tasks = cloudTasks;
+            if (currentUser && currentUser.role !== 'ADMIN' && currentUser.id !== 'shp') {
+                tasks = tasks.filter(t => t.assigneeId === currentUser.id);
             }
 
-            let html = '';
-            usersList.forEach(u => {
-                html += `
-                    <div onclick="selectAssigneeItem('${u.id}', '${escapeHtml(u.name)}', '${u.phone || ''}')" class="px-4 py-2.5 hover:bg-indigo-100/70 cursor-pointer flex items-center justify-between text-xs border-b border-slate-200 last:border-none">
-                        <div class="flex items-center space-x-2">
-                            <div class="w-6 h-6 rounded-full bg-indigo-200 text-indigo-800 font-bold flex items-center justify-center text-[10px]">
-                                ${u.name.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <span class="font-bold text-slate-950 block">${escapeHtml(u.name)}</span>
-                                <span class="text-[10px] font-semibold text-slate-600">SĐT: ${escapeHtml(u.phone || '--')}</span>
-                            </div>
-                        </div>
-                        <span class="text-[10px] font-extrabold text-indigo-800 bg-indigo-100 px-2 py-0.5 rounded-md">${u.role || 'USER'}</span>
-                    </div>
-                `;
-            });
-            dropdown.innerHTML = html;
-        }
+            const total = tasks.length;
+            const notDone = tasks.filter(t => t.status === 'Chưa Thực Hiện').length;
+            const doing = tasks.filter(t => t.status === 'Đang Thực Hiện').length;
+            const done = tasks.filter(t => t.status === 'Đã Hoàn Thành').length;
+            const overdue = tasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
 
-        function selectAssigneeItem(id, name, phone) {
-            selectedAssigneeId = id;
-            document.getElementById('task-assignee-input').value = id;
-            document.getElementById('task-assignee-search').value = `${name} (${phone})`;
-            const dropdown = document.getElementById('assignee-dropdown-list');
-            if (dropdown) dropdown.classList.add('hidden');
+            document.getElementById('count-tab-ALL').innerText = total;
+            document.getElementById('count-tab-Chưa Thực Hiện').innerText = notDone;
+            document.getElementById('count-tab-Đang Thực Hiện').innerText = doing;
+            document.getElementById('count-tab-Quá Hạn').innerText = overdue;
+            document.getElementById('count-tab-Đã Hoàn Thành').innerText = done;
         }
 
         function renderTasks() {
@@ -1878,119 +899,101 @@
             if (!tbody) return;
 
             const searchQuery = document.getElementById('task-search')?.value.toLowerCase() || '';
+            const todayStr = new Date().toISOString().split('T')[0];
 
-            // Lấy danh sách Multi-select Nhân sự
-            const selectedAssignees = Array.from(document.querySelectorAll('#multi-dropdown-assignee input[type="checkbox"]:checked')).map(cb => cb.value);
-
-            // Lấy danh sách Multi-select Trạng thái (bao gồm Urgent)
-            const selectedStatuses = Array.from(document.querySelectorAll('#multi-dropdown-status input[type="checkbox"]:checked')).map(cb => cb.value);
-
-            let processedTasks = filterTasksByTime(cloudTasks, taskFutureViewMode);
-
-            if (currentUser && currentUser.role !== 'ADMIN') {
-                processedTasks = processedTasks.filter(t => t.assigneeId === currentUser.id);
+            let list = cloudTasks;
+            if (currentUser && currentUser.role !== 'ADMIN' && currentUser.id !== 'shp') {
+                list = list.filter(t => t.assigneeId === currentUser.id);
             }
 
-            // Thực hiện Lọc kết hợp với Multi-Select
-            processedTasks = processedTasks.filter(t => {
-                const matchesSearch = t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery));
-                
-                const matchesAssignee = selectedAssignees.length === 0 || selectedAssignees.includes(t.assigneeId);
-                
-                let matchesStatus = true;
-                if (selectedStatuses.length > 0) {
-                    matchesStatus = selectedStatuses.some(st => {
-                        if (st === 'Urgent') return t.priority === 'Urgent';
-                        return t.status === st;
-                    });
-                }
+            // Lọc theo Lựa Chọn Thanh Trạng Thái
+            if (activeTaskStatusTab === 'Chưa Thực Hiện') {
+                list = list.filter(t => t.status === 'Chưa Thực Hiện');
+            } else if (activeTaskStatusTab === 'Đang Thực Hiện') {
+                list = list.filter(t => t.status === 'Đang Thực Hiện');
+            } else if (activeTaskStatusTab === 'Quá Hạn') {
+                list = list.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành');
+            } else if (activeTaskStatusTab === 'Đã Hoàn Thành') {
+                list = list.filter(t => t.status === 'Đã Hoàn Thành');
+            }
 
-                return matchesSearch && matchesAssignee && matchesStatus;
-            });
-
-            // Thứ tự hiển thị ưu tiên: Urgent -> Chưa Thực Hiện -> Đang Thực Hiện -> Đã Hoàn Thành
-            const statusOrder = {
-                'Urgent': 1,
-                'Chưa Thực Hiện': 2,
-                'Đang Thực Hiện': 3,
-                'Đã Hoàn Thành': 4,
-                'Huỷ': 5
-            };
-
-            processedTasks.sort((a, b) => {
-                const orderA = a.priority === 'Urgent' ? 1 : (statusOrder[a.status] || 99);
-                const orderB = b.priority === 'Urgent' ? 1 : (statusOrder[b.status] || 99);
-                if (orderA !== orderB) return orderA - orderB;
-                return (b.createdAt || 0) - (a.createdAt || 0);
-            });
+            // Lọc theo Tìm kiếm
+            if (searchQuery) {
+                list = list.filter(t => t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery)));
+            }
 
             let html = '';
-            if (processedTasks.length === 0) {
-                html = `<tr><td colspan="6" class="py-10 text-center text-slate-500 font-semibold">Không tìm thấy công việc nào phù hợp bộ lọc.</td></tr>`;
+            if (list.length === 0) {
+                html = `<tr><td colspan="6" class="py-8 text-center text-slate-500 font-semibold">Không có công việc nào trong mục này.</td></tr>`;
             } else {
-                processedTasks.forEach(t => {
-                    const assigneeObj = cloudUsers.find(u => u.id === t.assigneeId);
-                    const assigneeName = assigneeObj ? (assigneeObj.nickname ? `${assigneeObj.name} (${assigneeObj.nickname})` : assigneeObj.name) : 'Chưa phân công';
+                list.forEach(t => {
+                    const isOverdue = t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành';
+                    let badgeColor = 'bg-slate-200 text-slate-800 font-bold';
+                    let statusLabel = t.status || 'Chưa Thực Hiện';
 
-                    let badgeColor = 'bg-slate-200 text-slate-700 font-bold';
-                    if (t.status === 'Đang Thực Hiện') badgeColor = 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
-                    if (t.status === 'Đã Hoàn Thành') badgeColor = 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold';
-                    if (t.status === 'Huỷ') badgeColor = 'bg-rose-100 text-rose-900 border border-rose-300 font-bold';
-
-                    let priorityBadge = '';
-                    if (t.priority === 'Urgent') {
-                        priorityBadge = `<span class="inline-flex items-center px-2.5 py-1 rounded-xl text-xs font-black bg-rose-600 text-white mb-1 shadow-md animate-pulse"><i class="fa-solid fa-fire mr-1.5 text-amber-300"></i>Urgent 🔥</span>`;
+                    if (isOverdue) {
+                        badgeColor = 'bg-rose-100 text-rose-900 border border-rose-300 font-bold';
+                        statusLabel = 'Quá Hạn';
+                    } else if (t.status === 'Đang Thực Hiện') {
+                        badgeColor = 'bg-amber-100 text-amber-900 border border-amber-300 font-bold';
+                    } else if (t.status === 'Đã Hoàn Thành') {
+                        badgeColor = 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-bold';
                     }
 
-                    const isAdmin = currentUser && currentUser.role === 'ADMIN';
+                    const assignee = cloudUsers.find(u => u.id === t.assigneeId)?.name || 'Chưa phân công';
 
                     html += `
                         <tr class="hover:bg-slate-200/50 transition-colors">
                             <td class="py-3.5 px-4 sm:px-6">
-                                ${priorityBadge}
                                 <span class="font-bold text-slate-950 block">${escapeHtml(t.title)}</span>
-                                <span class="text-[11px] font-medium text-slate-600 line-clamp-1">${escapeHtml(t.description || 'Không có mô tả')}</span>
+                                <span class="text-[11px] font-medium text-slate-600 line-clamp-1">${escapeHtml(t.description || '')}</span>
                             </td>
-                            <td class="py-3.5 px-3 sm:px-4 font-bold text-slate-900 text-xs">
-                                <div class="flex items-center space-x-1.5">
-                                    <div class="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-indigo-200 text-indigo-800 font-bold flex items-center justify-center text-[10px] flex-shrink-0">
-                                        ${(assigneeObj && assigneeObj.name) ? assigneeObj.name.charAt(0).toUpperCase() : 'U'}
-                                    </div>
-                                    <span class="truncate max-w-[100px] sm:max-w-[130px]">${escapeHtml(assigneeName)}</span>
-                                </div>
-                            </td>
-                            <td class="py-3.5 px-3 sm:px-4">
-                                <span class="px-2.5 py-1 rounded-full text-[11px] ${badgeColor}">${t.status || 'Chưa Thực Hiện'}</span>
-                            </td>
+                            <td class="py-3.5 px-3 sm:px-4 font-bold text-slate-900 text-xs">${escapeHtml(assignee)}</td>
+                            <td class="py-3.5 px-3 sm:px-4"><span class="px-2.5 py-1 rounded-full text-[11px] ${badgeColor}">${statusLabel}</span></td>
                             <td class="py-3.5 px-3 sm:px-4">
                                 <div class="flex items-center space-x-1.5">
-                                    <div class="w-14 sm:w-20 bg-slate-300 rounded-full h-2 overflow-hidden flex-shrink-0">
-                                        <div class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: ${t.progress || 0}%"></div>
-                                    </div>
+                                    <div class="w-14 bg-slate-300 rounded-full h-2 overflow-hidden"><div class="bg-indigo-600 h-2 rounded-full" style="width: ${t.progress || 0}%"></div></div>
                                     <span class="text-[11px] font-bold text-slate-800">${t.progress || 0}%</span>
                                 </div>
                             </td>
-                            <td class="py-3.5 px-3 sm:px-4 text-xs whitespace-nowrap">
-                                <div class="text-indigo-700 font-bold"><i class="fa-regular fa-calendar text-[10px] mr-1"></i> Từ: ${t.startDate || '--/--/----'}</div>
-                                <div class="text-rose-700 font-bold"><i class="fa-regular fa-calendar-xmark text-[10px] mr-1"></i> Đến: ${t.deadline || '--/--/----'}</div>
-                            </td>
-                            <td class="py-3.5 px-4 sm:px-6 text-right space-x-1 whitespace-nowrap">
-                                <button onclick="openStaffUpdateModal('${t.id}')" class="px-3 py-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-xs font-bold transition-all shadow-xs" title="Cập nhật tiến độ">
-                                    Cập nhật
-                                </button>
-                                ${isAdmin ? `
-                                <button onclick="openTaskModal('${t.id}')" class="p-1.5 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-xs transition-all shadow-xs" title="Sửa công việc">
-                                    <i class="fa-solid fa-pen"></i>
-                                </button>
-                                <button onclick="deleteTask('${t.id}')" class="p-1.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl text-xs transition-all shadow-xs" title="Xóa công việc">
-                                    <i class="fa-solid fa-trash"></i>
-                                </button>` : ''}
+                            <td class="py-3.5 px-3 sm:px-4 text-xs font-bold text-slate-800">${t.deadline || '--'}</td>
+                            <td class="py-3.5 px-4 sm:px-6 text-right space-x-1">
+                                <button onclick="openStaffUpdateModal('${t.id}')" class="px-3 py-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-xs font-bold transition-all">Cập nhật</button>
                             </td>
                         </tr>
                     `;
                 });
             }
             tbody.innerHTML = html;
+        }
+
+        function renderDashboard() {
+            let tasks = cloudTasks;
+            if (currentUser && currentUser.role !== 'ADMIN' && currentUser.id !== 'shp') {
+                tasks = tasks.filter(t => t.assigneeId === currentUser.id);
+            }
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const total = tasks.length;
+            const doing = tasks.filter(t => t.status === 'Đang Thực Hiện').length;
+            const done = tasks.filter(t => t.status === 'Đã Hoàn Thành').length;
+            const overdue = tasks.filter(t => t.deadline && t.deadline < todayStr && t.status !== 'Đã Hoàn Thành').length;
+
+            document.getElementById('stat-total').innerText = total;
+            document.getElementById('stat-doing').innerText = doing;
+            document.getElementById('stat-done').innerText = done;
+            document.getElementById('stat-overdue').innerText = overdue;
+            document.getElementById('stat-completion-rate').innerText = (total > 0 ? Math.round((done / total) * 100) : 0) + '%';
+        }
+
+        function populateAssigneesSelect() {
+            const select = document.getElementById('task-assignee-select');
+            if (!select) return;
+            let html = '';
+            cloudUsers.forEach(u => {
+                html += `<option value="${u.id}">${u.name}</option>`;
+            });
+            select.innerHTML = html;
         }
 
         function openStaffUpdateModal(taskId) {
@@ -2001,9 +1004,9 @@
             document.getElementById('staff-status-select').value = task.status || 'Chưa Thực Hiện';
             document.getElementById('staff-progress-range').value = task.progress || 0;
             document.getElementById('staff-progress-val').innerText = (task.progress || 0) + '%';
-            document.getElementById('staff-note-input').value = task.note || '';
             document.getElementById('modal-staff-update').classList.remove('hidden');
         }
+
         function closeStaffUpdateModal() { document.getElementById('modal-staff-update').classList.add('hidden'); }
 
         async function handleSaveStaffUpdate(e) {
@@ -2011,840 +1014,59 @@
             const taskId = document.getElementById('staff-task-id').value;
             const status = document.getElementById('staff-status-select').value;
             const progress = parseInt(document.getElementById('staff-progress-range').value);
-            const note = document.getElementById('staff-note-input').value.trim();
 
-            const task = cloudTasks.find(t => t.id === taskId);
-            if (!task) return;
-
-            const updaterName = currentUser ? (currentUser.nickname || currentUser.name) : 'Nhân viên';
-
-            await db.collection('tasks').doc(taskId).update({ 
-                status, 
-                progress, 
-                note,
-                updatedAt: Date.now()
-            });
-
-            const adminNotifMsg = `${updaterName} đã cập nhật tiến độ công việc "${task.title}": Trạng thái [${status}], Tiến độ [${progress}%].` + (note ? ` Ghi chú: "${note}"` : '');
-            
-            await sendNotification('shp', `Cập nhật tiến độ: ${task.title}`, adminNotifMsg);
-
-            if (task.creatorId && task.creatorId !== 'shp' && task.creatorId !== currentUser?.id) {
-                await sendNotification(task.creatorId, `Tiến độ công việc: ${task.title}`, adminNotifMsg);
-            }
-
-            await addLog(`Cập nhật tiến độ công việc: ${task.title} (${progress}%)`);
+            await db.collection('tasks').doc(taskId).update({ status, progress, updatedAt: Date.now() });
             closeStaffUpdateModal();
-            showToast('Cập nhật tiến độ thành công và đã báo cáo Admin!');
+            showToast('Cập nhật tiến độ thành công!');
         }
 
-        function openTaskModal(taskId = null) {
+        function openTaskModal() {
             document.getElementById('form-task').reset();
             document.getElementById('task-id').value = '';
-            selectedAssigneeId = '';
-            document.getElementById('task-assignee-input').value = '';
-            document.getElementById('task-assignee-search').value = '';
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            const startDateInput = document.getElementById('task-start-date-input');
-            if (startDateInput) startDateInput.value = todayStr;
-
-            const priorityInput = document.getElementById('task-priority-input');
-            if (priorityInput) priorityInput.value = 'Normal';
-
-            document.getElementById('modal-task-title').innerText = 'Giao Việc Mới';
-            
-            if (taskId) {
-                const task = cloudTasks.find(t => t.id === taskId);
-                if (task) {
-                    document.getElementById('modal-task-title').innerText = 'Chỉnh Sửa Công Việc';
-                    document.getElementById('task-id').value = task.id;
-                    document.getElementById('task-title-input').value = task.title || '';
-                    document.getElementById('task-desc-input').value = task.description || '';
-                    if (priorityInput) priorityInput.value = task.priority || 'Normal';
-                    if (startDateInput) startDateInput.value = task.startDate || todayStr;
-                    document.getElementById('task-deadline-input').value = task.deadline || '';
-                    
-                    if (task.assigneeId) {
-                        const u = cloudUsers.find(user => user.id === task.assigneeId);
-                        if (u) {
-                            selectedAssigneeId = u.id;
-                            document.getElementById('task-assignee-input').value = u.id;
-                            document.getElementById('task-assignee-search').value = `${u.name} (${u.phone || ''})`;
-                        }
-                    }
-                }
-            }
             document.getElementById('modal-task').classList.remove('hidden');
         }
-
-        function closeTaskModal() { 
-            document.getElementById('modal-task').classList.add('hidden'); 
-            hideAssigneeDropdown();
-        }
+        function closeTaskModal() { document.getElementById('modal-task').classList.add('hidden'); }
 
         async function handleSaveTask(e) {
             e.preventDefault();
-            const taskId = document.getElementById('task-id').value;
             const title = document.getElementById('task-title-input').value.trim();
             const description = document.getElementById('task-desc-input').value.trim();
-            const priority = document.getElementById('task-priority-input').value;
-            const assigneeId = document.getElementById('task-assignee-input').value;
             const startDate = document.getElementById('task-start-date-input').value;
             const deadline = document.getElementById('task-deadline-input').value;
+            const assigneeId = document.getElementById('task-assignee-select').value;
 
-            const creatorName = currentUser ? (currentUser.nickname || currentUser.name) : 'Admin';
-
-            if (!assigneeId) {
-                showToast('Vui lòng chọn người thực hiện từ danh sách!', true);
-                return;
-            }
-
-            if (startDate > deadline) {
-                showToast('Ngày bắt đầu không thể lớn hơn Deadline!', true);
-                return;
-            }
-
-            if (taskId) {
-                await db.collection('tasks').doc(taskId).update({
-                    title, 
-                    description, 
-                    priority,
-                    assigneeId, 
-                    startDate,
-                    deadline,
-                    updatedAt: Date.now()
-                });
-
-                await sendNotification(
-                    assigneeId,
-                    "Cập nhật công việc",
-                    `Công việc "${title}" [Ưu tiên: ${priority}] đã được điều chỉnh thời gian.`
-                );
-
-                await addLog(`Cập nhật công việc: ${title}`);
-                showToast('Cập nhật công việc thành công!');
-            } else {
-                await db.collection('tasks').add({
-                    title, 
-                    description, 
-                    priority,
-                    assigneeId, 
-                    startDate,
-                    deadline,
-                    status: 'Chưa Thực Hiện', 
-                    progress: 0, 
-                    creatorId: currentUser ? currentUser.id : 'shp',
-                    createdAt: new Date().toISOString().split('T')[0],
-                    timestamp: Date.now()
-                });
-
-                await sendNotification(
-                    assigneeId,
-                    "Bạn có việc mới!",
-                    `${creatorName} đã giao công việc: "${title}" [${priority}]. Thời gian: ${startDate} đến ${deadline}.`
-                );
-
-                await addLog(`Tạo và giao công việc mới: ${title}`);
-                showToast('Giao việc thành công!');
-            }
+            await db.collection('tasks').add({
+                title, description, startDate, deadline, assigneeId,
+                status: 'Chưa Thực Hiện', progress: 0, createdAt: Date.now()
+            });
 
             closeTaskModal();
-            renderTasks();
-        }
-
-        async function deleteTask(id) {
-            if (!confirm('Xóa công việc này?')) return;
-            await db.collection('tasks').doc(id).delete();
-            await addLog(`Xóa công việc ID: ${id}`);
-            showToast('Đã xóa công việc.');
-        }
-
-        // --- SHIFT SWAP ---
-        function openSwapModal() {
-            document.getElementById('form-swap').reset();
-            populateAssignees();
-            document.getElementById('modal-swap').classList.remove('hidden');
-        }
-        function closeSwapModal() { document.getElementById('modal-swap').classList.add('hidden'); }
-
-        async function handleSaveSwap(e) {
-            e.preventDefault();
-            const date = document.getElementById('swap-date-input').value;
-            const targetUserId = document.getElementById('swap-target-user-select').value;
-            const reason = document.getElementById('swap-reason-input').value;
-
-            if (targetUserId === currentUser.id) {
-                showToast('Không thể đổi ca với chính mình!', true);
-                return;
-            }
-
-            let userShift = (cloudSchedules[date] && cloudSchedules[date][currentUser.id]) || 'Chưa phân ca';
-            let targetShift = (cloudSchedules[date] && cloudSchedules[date][targetUserId]) || 'Chưa phân ca';
-
-            await db.collection('shiftSwaps').add({
-                date, requesterId: currentUser.id, requesterName: currentUser.name,
-                requesterShift: userShift, targetUserId,
-                targetUserName: cloudUsers.find(u => u.id === targetUserId)?.name || '',
-                targetShift: targetShift, reason,
-                peerStatus: 'PENDING', adminStatus: 'PENDING', createdAt: Date.now()
-            });
-
-            await addLog(`Tạo yêu cầu đổi ca ngày ${date}`);
-            closeSwapModal();
-            showToast('Đã gửi yêu cầu đổi ca đến đồng nghiệp!');
-        }
-
-        async function handlePeerApprove(swapId, accept) {
-            await db.collection('shiftSwaps').doc(swapId).update({ peerStatus: accept ? 'ACCEPTED' : 'REJECTED' });
-            showToast(accept ? 'Đã chấp thuận đổi ca!' : 'Đã từ chối yêu cầu.');
-        }
-
-        async function handleAdminApprove(swapId, approve) {
-            const swapDoc = cloudSwapRequests.find(s => s.id === swapId);
-            if (!swapDoc) return;
-
-            if (approve) {
-                const dateKey = swapDoc.date;
-                if (!cloudSchedules[dateKey]) cloudSchedules[dateKey] = {};
-                let temp = cloudSchedules[dateKey][swapDoc.requesterId];
-                cloudSchedules[dateKey][swapDoc.requesterId] = cloudSchedules[dateKey][swapDoc.targetUserId] || 'Chưa phân ca';
-                cloudSchedules[dateKey][swapDoc.targetUserId] = temp || 'Chưa phân ca';
-                await db.collection('schedules').doc(dateKey).set(cloudSchedules[dateKey]);
-            }
-
-            await db.collection('shiftSwaps').doc(swapId).update({ adminStatus: approve ? 'APPROVED' : 'REJECTED' });
-            showToast(approve ? 'Đã phê duyệt đổi ca!' : 'Đã từ chối.');
-        }
-
-        function renderSwapRequests() {
-            const tbody = document.getElementById('swap-table-body');
-            if (!tbody) return;
-
-            let html = '';
-            cloudSwapRequests.sort((a, b) => b.createdAt - a.createdAt);
-            cloudSwapRequests.forEach(s => {
-                let isMyPeerRequest = currentUser && s.targetUserId === currentUser.id;
-                let isAdmin = currentUser && currentUser.role === 'ADMIN';
-
-                let peerBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Chờ xác nhận</span>`;
-                if (s.peerStatus === 'ACCEPTED') peerBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">Đã đồng ý</span>`;
-                if (s.peerStatus === 'REJECTED') peerBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-900 border border-rose-300">Đã từ chối</span>`;
-
-                let adminBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-slate-200 text-slate-800">Chờ đồng nghiệp</span>`;
-                if (s.peerStatus === 'ACCEPTED') {
-                    if (s.adminStatus === 'APPROVED') adminBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-300">Đã đổi ca</span>`;
-                    else if (s.adminStatus === 'REJECTED') adminBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-900 border border-rose-300">Admin từ chối</span>`;
-                    else adminBadge = `<span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">Chờ Admin</span>`;
-                }
-
-                let actions = '-';
-                if (isMyPeerRequest && s.peerStatus === 'PENDING') {
-                    actions = `<button onclick="handlePeerApprove('${s.id}', true)" class="px-3 py-1 bg-emerald-600 text-white rounded-xl text-xs font-bold mr-1 active:scale-95 transition-all shadow-xs">Đồng ý</button><button onclick="handlePeerApprove('${s.id}', false)" class="px-3 py-1 bg-rose-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-xs">Từ chối</button>`;
-                } else if (isAdmin && s.peerStatus === 'ACCEPTED' && s.adminStatus === 'PENDING') {
-                    actions = `<button onclick="handleAdminApprove('${s.id}', true)" class="px-3 py-1 bg-indigo-600 text-white rounded-xl text-xs font-bold mr-1 active:scale-95 transition-all shadow-xs">Phê duyệt</button><button onclick="handleAdminApprove('${s.id}', false)" class="px-3 py-1 bg-rose-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-all shadow-xs">Từ chối</button>`;
-                }
-
-                html += `
-                    <tr class="hover:bg-slate-200/50 transition-colors">
-                        <td class="py-3.5 px-4 sm:px-6 font-bold text-slate-950">${s.date}<br><span class="text-[11px] text-slate-600 font-semibold">Lý do: ${escapeHtml(s.reason)}</span></td>
-                        <td class="py-3.5 px-3 sm:px-4 font-bold text-slate-900">${escapeHtml(s.requesterName)}<br><span class="text-[11px] text-indigo-700 font-black">Ca: ${s.requesterShift}</span></td>
-                        <td class="py-3.5 px-3 sm:px-4 font-bold text-slate-900">${escapeHtml(s.targetUserName)}<br><span class="text-[11px] text-indigo-700 font-black">Ca: ${s.targetShift}</span></td>
-                        <td class="py-3.5 px-3 sm:px-4 text-xs">${peerBadge}</td>
-                        <td class="py-3.5 px-3 sm:px-4 text-xs">${adminBadge}</td>
-                        <td class="py-3.5 px-4 sm:px-6 text-right whitespace-nowrap">${actions}</td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = html || `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-semibold">Chưa có yêu cầu đổi ca nào</td></tr>`;
-        }
-
-        // --- SCHEDULE ---
-        function setScheduleViewMode(mode) {
-            scheduleViewMode = mode;
-            ['day', 'week', 'month'].forEach(m => {
-                const btn = document.getElementById(`sched-btn-${m}`);
-                if (btn) {
-                    btn.className = m === mode ? "px-3 py-1.5 rounded-xl text-xs font-bold transition-all bg-white text-indigo-700 shadow-sm" : "px-3 py-1.5 rounded-xl text-xs font-bold transition-all text-slate-700";
-                }
-            });
-            renderSchedule();
-        }
-
-        function onScheduleDateChange() { renderSchedule(); }
-
-        function changeWeek(direction) {
-            const dp = document.getElementById('schedule-date-picker');
-            if (!dp) return;
-            let currentDate = dp.value ? new Date(dp.value) : new Date();
-            currentDate.setDate(currentDate.getDate() + (direction * 7));
-            dp.value = currentDate.toISOString().split('T')[0];
-            renderSchedule();
-        }
-
-        function downloadScheduleTemplateCustom() {
-            const startVal = document.getElementById('template-start-date')?.value;
-            const endVal = document.getElementById('template-end-date')?.value;
-
-            if (!startVal || !endVal) {
-                showToast("Vui lòng chọn Ngày bắt đầu và Ngày kết thúc!", true);
-                return;
-            }
-
-            const startDate = new Date(startVal);
-            const endDate = new Date(endVal);
-
-            if (startDate > endDate) {
-                showToast("Ngày bắt đầu không được lớn hơn Ngày kết thúc!", true);
-                return;
-            }
-
-            const dateList = [];
-            let curr = new Date(startDate);
-            while (curr <= endDate) {
-                dateList.push(curr.toISOString().split('T')[0]);
-                curr.setDate(curr.getDate() + 1);
-            }
-
-            const wb = XLSX.utils.book_new();
-            const titleRow = [`Mẫu Phân Ca Làm Việc (${startVal} đến ${endVal})`];
-            const headerRow = ["STT", "Mã NV", "HỌ & TÊN"];
-            dateList.forEach(dStr => {
-                const dObj = new Date(dStr);
-                const dayName = dObj.toLocaleDateString('vi-VN', { weekday: 'short' });
-                headerRow.push(`${dayName} (${dStr})`);
-            });
-
-            const data = [titleRow, headerRow];
-            cloudUsers.forEach((u, i) => {
-                const row = [i + 1, u.id, u.name];
-                dateList.forEach(dStr => {
-                    const existingShift = (cloudSchedules[dStr] && cloudSchedules[dStr][u.id]) || "Ca Sáng";
-                    row.push(existingShift);
-                });
-                data.push(row);
-            });
-
-            const ws = XLSX.utils.aoa_to_sheet(data);
-            XLSX.utils.book_append_sheet(wb, ws, "PhanCa");
-            XLSX.writeFile(wb, `Mau_Phan_Ca_${startVal}_to_${endVal}.xlsx`);
-            showToast("Đã tải xuống file mẫu phân ca thành công!");
-        }
-
-        async function handleScheduleUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                    if (json.length > 1) {
-                        const headerRow = json[1];
-                        if (!headerRow || headerRow.length < 4) {
-                            showToast("File Excel không đúng cấu trúc mẫu!", true);
-                            return;
-                        }
-
-                        const dateKeys = [];
-                        for (let c = 3; c < headerRow.length; c++) {
-                            const colText = String(headerRow[c] || '');
-                            const match = colText.match(/\d{4}-\d{2}-\d{2}/);
-                            if (match) {
-                                dateKeys.push({ colIndex: c, dateKey: match[0] });
-                            }
-                        }
-
-                        if (dateKeys.length === 0) {
-                            showToast("Không tìm thấy ngày dạng YYYY-MM-DD!", true);
-                            return;
-                        }
-
-                        let updatedSchedules = { ...cloudSchedules };
-
-                        for (let r = 2; r < json.length; r++) {
-                            const row = json[r];
-                            if (!row || row.length < 3) continue;
-                            const userId = String(row[1]).trim();
-                            const userName = String(row[2]).trim().toLowerCase();
-
-                            const matchedUser = cloudUsers.find(u => u.id === userId || u.name.toLowerCase() === userName);
-                            if (!matchedUser) continue;
-
-                            dateKeys.forEach(dk => {
-                                const shiftValue = row[dk.colIndex];
-                                if (shiftValue !== undefined && shiftValue !== null && String(shiftValue).trim() !== '') {
-                                    if (!updatedSchedules[dk.dateKey]) {
-                                        updatedSchedules[dk.dateKey] = {};
-                                    }
-                                    updatedSchedules[dk.dateKey][matchedUser.id] = String(shiftValue).trim();
-                                }
-                            });
-                        }
-
-                        const batch = db.batch();
-                        dateKeys.forEach(dk => {
-                            const dateRef = db.collection('schedules').doc(dk.dateKey);
-                            batch.set(dateRef, updatedSchedules[dk.dateKey] || {}, { merge: true });
-                        });
-                        await batch.commit();
-
-                        await addLog(`Upload cập nhật lịch phân ca từ file Excel cho ${dateKeys.length} ngày.`);
-                        showToast(`Cập nhật thành công lịch phân ca từ ${dateKeys[0].dateKey} đến ${dateKeys[dateKeys.length - 1].dateKey}!`);
-                    }
-                } catch (err) { 
-                    showToast("Lỗi khi đọc file Excel!", true); 
-                }
-                e.target.value = '';
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function openEditShiftModal(userId, dateStr) {
-            if (!currentUser || currentUser.role !== 'ADMIN') return;
-            const user = cloudUsers.find(u => u.id === userId);
-            if (!user) return;
-            document.getElementById('edit-shift-userid').value = userId;
-            document.getElementById('edit-shift-date').value = dateStr;
-            document.getElementById('edit-shift-username').innerText = user.name;
-            document.getElementById('edit-shift-datestr').innerText = dateStr;
-            document.getElementById('edit-shift-value').value = (cloudSchedules[dateStr] && cloudSchedules[dateStr][userId]) || 'Ca Sáng';
-            document.getElementById('modal-edit-shift').classList.remove('hidden');
-        }
-        function closeEditShiftModal() { document.getElementById('modal-edit-shift').classList.add('hidden'); }
-
-        async function handleSaveEditShift(e) {
-            e.preventDefault();
-            const userId = document.getElementById('edit-shift-userid').value;
-            const dateStr = document.getElementById('edit-shift-date').value;
-            const newShift = document.getElementById('edit-shift-value').value;
-
-            if (!cloudSchedules[dateStr]) cloudSchedules[dateStr] = {};
-            cloudSchedules[dateStr][userId] = newShift;
-            await db.collection('schedules').doc(dateStr).set(cloudSchedules[dateStr]);
-
-            const targetUser = cloudUsers.find(u => u.id === userId);
-            if (targetUser) {
-                await sendNotification(userId, "Lịch làm việc cập nhật", `Admin đã đổi ca ngày ${dateStr} thành: ${newShift}.`);
-            }
-            closeEditShiftModal();
-            showToast('Đã cập nhật ca làm!');
-        }
-
-        function renderSchedule() {
-            const container = document.getElementById('schedule-content-view');
-            if (!container) return;
-
-            const todayStr = new Date().toISOString().split('T')[0];
-            const datePicker = document.getElementById('schedule-date-picker');
-            if (datePicker && !datePicker.value) {
-                datePicker.value = todayStr;
-            }
-
-            const selectedDateStr = (datePicker && datePicker.value) ? datePicker.value : todayStr;
-            const baseDate = new Date(selectedDateStr);
-            const isAdmin = currentUser && currentUser.role === 'ADMIN';
-
-            let sortedUsers = [...cloudUsers];
-            sortedUsers.sort((a, b) => (a.order || 0) - (b.order || 0));
-            sortedUsers.sort((a, b) => {
-                let scoreA = (currentUser && a.id === currentUser.id ? 2 : 0) + (highlightedStaff[a.id] ? 1 : 0);
-                let scoreB = (currentUser && b.id === currentUser.id ? 2 : 0) + (highlightedStaff[b.id] ? 1 : 0);
-                if (scoreA !== scoreB) return scoreB - scoreA;
-                return (a.order || 0) - (b.order || 0);
-            });
-
-            let fragment = document.createDocumentFragment();
-            let wrapper = document.createElement('div');
-
-            function getShiftSummary(dateList) {
-                const summary = {}; 
-                const allShiftTypes = new Set();
-
-                dateList.forEach(dStr => {
-                    summary[dStr] = {};
-                    const dayShifts = cloudSchedules[dStr] || {};
-                    cloudUsers.forEach(u => {
-                        const shift = dayShifts[u.id] || 'Chưa phân ca';
-                        summary[dStr][shift] = (summary[dStr][shift] || 0) + 1;
-                        allShiftTypes.add(shift);
-                    });
-                });
-
-                return { summary, shiftTypes: Array.from(allShiftTypes) };
-            }
-
-            if (scheduleViewMode === 'day') {
-                let shiftData = cloudSchedules[selectedDateStr] || {};
-                const { summary, shiftTypes } = getShiftSummary([selectedDateStr]);
-                const dayCounts = summary[selectedDateStr] || {};
-
-                let html = `<h3 class="font-bold text-slate-950 text-sm sm:text-base mb-4">Phân ca ngày: ${selectedDateStr}</h3><table class="w-full text-left border-collapse table-auto mb-6"><thead><tr class="bg-slate-100/90 border-b text-xs text-slate-700 uppercase font-extrabold"><th class="py-3 px-3 sm:px-4">STT</th><th class="py-3 px-4 sm:px-6">Họ tên</th><th class="py-3 px-4 sm:px-6">Ca làm</th><th class="py-3 px-3 sm:px-4 text-right">Highlight</th></tr></thead><tbody class="divide-y text-xs sm:text-sm font-semibold text-slate-900">`;
-                sortedUsers.forEach((u, idx) => {
-                    let shift = shiftData[u.id] || 'Chưa phân ca';
-                    let isMe = currentUser && u.id === currentUser.id;
-                    let isHigh = highlightedStaff[u.id];
-                    let uNameDisp = u.nickname ? `${u.name} (${u.nickname})` : u.name;
-                    html += `<tr class="${isMe ? 'my-account-row' : (isHigh ? 'highlight-row' : 'hover:bg-slate-200/50')}"><td class="py-3 px-3 sm:px-4 text-xs font-bold text-slate-600">${idx + 1}</td><td class="py-3 px-4 sm:px-6 font-bold text-slate-950">${escapeHtml(uNameDisp)}</td><td class="py-3 px-4 sm:px-6"><span onclick="${isAdmin ? `openEditShiftModal('${u.id}', '${selectedDateStr}')` : ''}" class="px-3 py-1 rounded-full text-xs font-bold bg-slate-200 text-slate-900 ${isAdmin ? 'cursor-pointer hover:bg-indigo-200' : ''}">${shift}</span></td><td class="py-3 px-3 sm:px-4 text-right"><button onclick="toggleStaffHighlight('${u.id}')" class="p-1.5 sm:p-2 ${isHigh ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'} rounded-xl text-xs shadow-xs"><i class="fa-solid fa-star"></i></button></td></tr>`;
-                });
-                html += `</tbody></table>`;
-
-                html += `
-                    <div class="bg-indigo-100/70 p-4 rounded-2xl border border-indigo-200">
-                        <h4 class="font-extrabold text-indigo-950 text-xs sm:text-sm mb-3 flex items-center space-x-2">
-                            <i class="fa-solid fa-chart-simple text-indigo-700"></i>
-                            <span>Thống kê nhân sự theo ca (Ngày ${selectedDateStr})</span>
-                        </h4>
-                        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-                `;
-                shiftTypes.forEach(st => {
-                    const count = dayCounts[st] || 0;
-                    html += `
-                        <div class="bg-white/90 p-3 rounded-2xl border border-slate-300 shadow-xs flex flex-col items-center justify-center">
-                            <span class="text-[10px] font-extrabold text-slate-700 truncate w-full text-center">${escapeHtml(st)}</span>
-                            <span class="text-base sm:text-lg font-black text-indigo-800 mt-1">${count} <span class="text-[10px] font-bold text-slate-500">người</span></span>
-                        </div>
-                    `;
-                });
-                html += `</div></div>`;
-
-                wrapper.innerHTML = html;
-
-            } else if (scheduleViewMode === 'week') {
-                let curr = new Date(baseDate);
-                let monday = new Date(curr.setDate(curr.getDate() - curr.getDay() + (curr.getDay() === 0 ? -6 : 1)));
-                let weekDates = [];
-                for (let i = 0; i < 7; i++) { 
-                    let d = new Date(monday); 
-                    d.setDate(monday.getDate() + i); 
-                    weekDates.push(d); 
-                }
-                const dateKeys = weekDates.map(d => d.toISOString().split('T')[0]);
-                const { summary, shiftTypes } = getShiftSummary(dateKeys);
-
-                let html = `<table class="w-full text-left border-collapse text-xs table-auto"><thead><tr class="bg-slate-100/90 border-b text-slate-700 uppercase font-extrabold"><th class="py-3 px-3 sm:px-4">Nhân sự</th>`;
-                weekDates.forEach(d => html += `<th class="py-3 px-2 sm:px-3 text-center ${d.toISOString().split('T')[0] === todayStr ? 'today-col' : ''}">${d.toLocaleDateString('vi-VN', {weekday: 'short'})}<br>${d.toLocaleDateString('vi-VN')}</th>`);
-                html += `<th class="py-3 px-2 sm:px-3 text-center">Highlight</th></tr></thead><tbody class="divide-y font-semibold text-slate-900">`;
-
-                sortedUsers.forEach(u => {
-                    let isMe = currentUser && u.id === currentUser.id;
-                    let isHigh = highlightedStaff[u.id];
-                    let uNameDisp = u.nickname ? `${u.name} (${u.nickname})` : u.name;
-                    html += `<tr class="${isMe ? 'my-account-row' : (isHigh ? 'highlight-row' : 'hover:bg-slate-200/50')}"><td class="py-3 px-3 sm:px-4 font-bold whitespace-nowrap text-slate-950">${escapeHtml(uNameDisp)}</td>`;
-                    weekDates.forEach(d => {
-                        let dStr = d.toISOString().split('T')[0];
-                        let shift = (cloudSchedules[dStr] && cloudSchedules[dStr][u.id]) || '-';
-                        html += `<td onclick="${isAdmin ? `openEditShiftModal('${u.id}', '${dStr}')` : ''}" class="py-3 px-2 sm:px-3 text-center font-bold ${isAdmin ? 'cursor-pointer hover:bg-indigo-100' : ''}">${shift}</td>`;
-                    });
-                    html += `<td class="py-3 px-2 sm:px-3 text-center"><button onclick="toggleStaffHighlight('${u.id}')" class="p-1 sm:p-1.5 ${isHigh ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'} rounded-xl text-xs shadow-xs"><i class="fa-solid fa-star"></i></button></td></tr>`;
-                });
-
-                html += `</tbody><tfoot class="bg-indigo-100/80 border-t-2 border-indigo-300">`;
-                shiftTypes.forEach(st => {
-                    html += `<tr class="text-indigo-950 font-bold"><td class="py-2.5 px-3 sm:px-4 bg-indigo-200/60 whitespace-nowrap">📊 Tổng ${escapeHtml(st)}</td>`;
-                    dateKeys.forEach(dStr => {
-                        const count = (summary[dStr] && summary[dStr][st]) || 0;
-                        html += `<td class="py-2.5 px-2 sm:px-3 text-center font-black text-indigo-900">${count}</td>`;
-                    });
-                    html += `<td class="py-2.5 px-2 sm:px-3"></td></tr>`;
-                });
-                html += `</tfoot></table>`;
-
-                wrapper.innerHTML = html;
-
-            } else { 
-                let year = baseDate.getFullYear(), month = baseDate.getMonth(), daysInMonth = new Date(year, month + 1, 0).getDate();
-                const monthDateKeys = [];
-                for (let day = 1; day <= daysInMonth; day++) {
-                    monthDateKeys.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`);
-                }
-                const { summary, shiftTypes } = getShiftSummary(monthDateKeys);
-
-                let html = `<table class="w-full text-left border-collapse text-xs table-auto"><thead><tr class="bg-slate-100/90 border-b text-slate-700 uppercase font-extrabold"><th class="py-3 px-3 sm:px-4">Nhân sự</th>`;
-                for (let day = 1; day <= daysInMonth; day++) html += `<th class="py-3 px-1 text-center">${day}</th>`;
-                html += `<th class="py-3 px-2 sm:px-3 text-center">Highlight</th></tr></thead><tbody class="divide-y font-semibold text-slate-900">`;
-
-                sortedUsers.forEach(u => {
-                    let isMe = currentUser && u.id === currentUser.id;
-                    let isHigh = highlightedStaff[u.id];
-                    let uNameDisp = u.nickname ? `${u.name} (${u.nickname})` : u.name;
-                    html += `<tr class="${isMe ? 'my-account-row' : (isHigh ? 'highlight-row' : 'hover:bg-slate-200/50')}"><td class="py-3 px-3 sm:px-4 font-bold whitespace-nowrap text-slate-950">${escapeHtml(uNameDisp)}</td>`;
-                    for (let day = 1; day <= daysInMonth; day++) {
-                        let dStr = monthDateKeys[day - 1];
-                        let shift = (cloudSchedules[dStr] && cloudSchedules[dStr][u.id]) || '-';
-                        html += `<td onclick="${isAdmin ? `openEditShiftModal('${u.id}', '${dStr}')` : ''}" class="py-3 px-1 text-center font-bold ${isAdmin ? 'cursor-pointer hover:bg-indigo-100' : ''}" title="${shift}">${shift === '-' ? '-' : shift.charAt(0)}</td>`;
-                    }
-                    html += `<td class="py-3 px-2 sm:px-3 text-center"><button onclick="toggleStaffHighlight('${u.id}')" class="p-1 sm:p-1.5 ${isHigh ? 'bg-amber-500 text-white' : 'bg-amber-100 text-amber-700'} rounded-xl text-xs shadow-xs"><i class="fa-solid fa-star"></i></button></td></tr>`;
-                });
-
-                html += `</tbody><tfoot class="bg-indigo-100/80 border-t-2 border-indigo-300">`;
-                shiftTypes.forEach(st => {
-                    html += `<tr class="text-indigo-950 font-bold"><td class="py-2 px-3 sm:px-4 bg-indigo-200/60 whitespace-nowrap">📊 Tổng ${escapeHtml(st)}</td>`;
-                    monthDateKeys.forEach(dStr => {
-                        const count = (summary[dStr] && summary[dStr][st]) || 0;
-                        html += `<td class="py-2 px-1 text-center font-black text-indigo-900">${count}</td>`;
-                    });
-                    html += `<td class="py-2 px-2 sm:px-3"></td></tr>`;
-                });
-                html += `</tfoot></table>`;
-
-                wrapper.innerHTML = html;
-            }
-
-            fragment.appendChild(wrapper);
-            container.innerHTML = '';
-            container.appendChild(fragment);
-        }
-
-        // --- USERS MANAGEMENT ---
-        function renderUsers() {
-            const tbody = document.getElementById('users-table-body');
-            if (!tbody) return;
-            
-            cloudUsers.sort((a, b) => (a.order || 0) - (b.order || 0));
-
-            let html = '';
-            cloudUsers.forEach((u, index) => {
-                let uNameDisp = u.nickname ? `${u.name} (${u.nickname})` : u.name;
-                html += `
-                    <tr class="hover:bg-slate-200/50 transition-colors">
-                        <td class="py-3 px-3 sm:px-4 text-center">
-                            <div class="flex flex-col items-center justify-center space-y-0.5">
-                                <button onclick="moveUserOrder('${u.id}', -1)" ${index === 0 ? 'disabled class="text-slate-300 cursor-not-allowed"' : 'class="text-indigo-700 hover:text-indigo-900 font-bold"'} title="Lên">
-                                    <i class="fa-solid fa-chevron-up text-xs"></i>
-                                </button>
-                                <button onclick="moveUserOrder('${u.id}', 1)" ${index === cloudUsers.length - 1 ? 'disabled class="text-slate-300 cursor-not-allowed"' : 'class="text-indigo-700 hover:text-indigo-900 font-bold"'} title="Xuống">
-                                    <i class="fa-solid fa-chevron-down text-xs"></i>
-                                </button>
-                            </div>
-                        </td>
-                        <td class="py-3 px-4 sm:px-6 font-bold text-slate-950">${escapeHtml(uNameDisp)}<br><span class="text-[10px] sm:text-[11px] text-slate-600 font-semibold">Email: ${escapeHtml(u.email || '-')}</span></td>
-                        <td class="py-3 px-3 sm:px-4 font-bold text-slate-900">${escapeHtml(u.phone)}</td>
-                        <td class="py-3 px-3 sm:px-4 font-mono text-xs bg-slate-200/90 rounded px-1.5 py-0.5 font-bold text-slate-900">${escapeHtml(u.password)}</td>
-                        <td class="py-3 px-3 sm:px-4 font-black text-xs text-indigo-700">${u.role}</td>
-                        <td class="py-3 px-3 sm:px-4 text-xs"><span class="px-2.5 py-0.5 rounded-full font-bold ${u.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-rose-100 text-rose-800 border border-rose-300'}">${u.status}</span></td>
-                        <td class="py-3 px-4 sm:px-6 text-right space-x-1 whitespace-nowrap">
-                            <button onclick="openUserModal('${u.id}')" class="p-1.5 sm:p-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-800 rounded-xl text-xs active:scale-95 transition-transform shadow-xs" title="Sửa"><i class="fa-solid fa-pen"></i></button>
-                            <button onclick="deleteUser('${u.id}')" class="p-1.5 sm:p-2 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-xl text-xs active:scale-95 transition-transform shadow-xs" title="Xóa"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>`;
-            });
-            tbody.innerHTML = html;
-        }
-
-        async function moveUserOrder(userId, direction) {
-            const currentIndex = cloudUsers.findIndex(u => u.id === userId);
-            if (currentIndex === -1) return;
-            const targetIndex = currentIndex + direction;
-            if (targetIndex < 0 || targetIndex >= cloudUsers.length) return;
-
-            let temp = cloudUsers[currentIndex];
-            cloudUsers[currentIndex] = cloudUsers[targetIndex];
-            cloudUsers[targetIndex] = temp;
-
-            const batch = db.batch();
-            cloudUsers.forEach((u, idx) => {
-                const userRef = db.collection('users').doc(u.id);
-                batch.update(userRef, { order: idx });
-                u.order = idx;
-            });
-
-            await batch.commit();
-            await addLog(`Thay đổi thứ tự hiển thị nhân sự`);
-            renderUsers();
-            renderSchedule();
-            showToast('Đã cập nhật lại thứ tự!');
-        }
-
-        function openUserModal(userId = null) {
-            document.getElementById('form-user').reset();
-            document.getElementById('user-edit-id').value = '';
-            
-            if (userId) {
-                const user = cloudUsers.find(u => u.id === userId);
-                if (user) {
-                    if (currentUser.id !== 'shp') {
-                        if (userId === 'shp') {
-                            showToast('Không thể chỉnh sửa tài khoản tối cao (shp)!', true);
-                            return;
-                        }
-                        if (user.role === 'ADMIN' && currentUser.id !== userId) {
-                            showToast('Không có quyền chỉnh sửa tài khoản Admin khác!', true);
-                            return;
-                        }
-                    }
-
-                    document.getElementById('modal-user-title').innerText = 'Chỉnh Sửa Thành Viên';
-                    document.getElementById('user-edit-id').value = user.id;
-                    document.getElementById('user-name-input').value = user.name;
-                    document.getElementById('user-phone-input').value = user.phone;
-                    document.getElementById('user-pass-input').value = user.password;
-                    document.getElementById('user-role-input').value = user.role;
-                    document.getElementById('user-status-input').value = user.status || 'ACTIVE';
-                }
-            } else { 
-                document.getElementById('modal-user-title').innerText = 'Thêm Thành Viên Mới'; 
-            }
-            document.getElementById('modal-user').classList.remove('hidden');
-        }
-
-        function closeUserModal() { 
-            document.getElementById('modal-user').classList.add('hidden'); 
-        }
-
-        async function handleSaveUser(e) {
-            e.preventDefault();
-            const editId = document.getElementById('user-edit-id').value;
-            const newRole = document.getElementById('user-role-input').value;
-
-            if (editId) {
-                const targetUser = cloudUsers.find(u => u.id === editId);
-                if (currentUser.id !== 'shp') {
-                    if (editId === 'shp') {
-                        showToast('Không được phép sửa tài khoản tối cao (shp)!', true);
-                        return;
-                    }
-                    if (targetUser && targetUser.role === 'ADMIN' && currentUser.id !== editId) {
-                        showToast('Bạn không có quyền sửa tài khoản của Admin khác!', true);
-                        return;
-                    }
-                    if (newRole === 'ADMIN' && targetUser.role !== 'ADMIN' && currentUser.id !== 'shp') {
-                        showToast('Chỉ tài khoản tối cao (shp) mới có thể cấp quyền Admin!', true);
-                        return;
-                    }
-                }
-            }
-
-            const userData = {
-                name: document.getElementById('user-name-input').value.trim(),
-                phone: document.getElementById('user-phone-input').value.trim(),
-                password: document.getElementById('user-pass-input').value,
-                role: newRole,
-                status: document.getElementById('user-status-input').value
-            };
-
-            if (editId) {
-                await db.collection('users').doc(editId).update(userData);
-                await addLog(`Cập nhật thành viên: ${userData.name}`);
-                showToast('Cập nhật thành viên thành công!');
-            } else {
-                if (newRole === 'ADMIN' && currentUser.id !== 'shp') {
-                    showToast('Chỉ tài khoản tối cao (shp) mới được tạo Admin mới!', true);
-                    return;
-                }
-                const newId = 'user_' + Date.now();
-                userData.order = cloudUsers.length;
-                await db.collection('users').doc(newId).set(userData);
-                await addLog(`Thêm mới thành viên: ${userData.name}`);
-                showToast('Thêm thành viên mới thành công!');
-            }
-            closeUserModal();
-        }
-
-        async function deleteUser(userId) {
-            if (currentUser && currentUser.id === userId) {
-                showToast('Không thể xóa tài khoản hiện tại!', true);
-                return;
-            }
-            
-            if (userId === 'shp') {
-                showToast('Không được phép xóa tài khoản tối cao (shp)!', true);
-                return;
-            }
-
-            const targetUser = cloudUsers.find(u => u.id === userId);
-            
-            if (currentUser.id !== 'shp' && targetUser && targetUser.role === 'ADMIN') {
-                showToast('Không có quyền xóa Admin khác!', true);
-                return;
-            }
-
-            if (!confirm('Bạn có chắc chắn muốn xóa tài khoản này không?')) return;
-
-            try {
-                await db.collection('users').doc(userId).delete();
-                await addLog(`Xóa thành viên ID: ${userId}`);
-                showToast('Đã xóa thành công tài khoản.');
-            } catch (err) {
-                showToast('Lỗi khi xóa tài khoản!', true);
-            }
-        }
-
-        function renderLogs() {
-            const tbody = document.getElementById('logs-table-body');
-            if (!tbody) return;
-            let html = '';
-            cloudLogs.forEach(l => {
-                html += `<tr><td class="py-3 px-4 sm:px-6 text-xs text-slate-600 font-bold">${l.timeFormatted}</td><td class="py-3 px-3 sm:px-4 font-black text-xs text-slate-950">${escapeHtml(l.user)}</td><td class="py-3 px-4 sm:px-6 text-xs text-slate-900 font-semibold">${escapeHtml(l.action)}</td></tr>`;
-            });
-            tbody.innerHTML = html || `<tr><td colspan="3" class="p-4 text-center text-slate-500 font-semibold">Chưa có nhật ký</td></tr>`;
+            showToast('Đã giao việc mới thành công!');
         }
 
         function switchTab(tab) {
-            if (currentTab === tab) return;
-
-            const tabs = ['dashboard', 'profile-settings', 'tasks', 'schedule', 'shift-swap', 'notifications', 'users', 'logs'];
-            const currentTabEl = document.getElementById(`tab-content-${currentTab}`);
-            const nextTabEl = document.getElementById(`tab-content-${tab}`);
-
-            if (currentTabEl) {
-                currentTabEl.classList.add('fade-out');
-            }
-
-            setTimeout(() => {
-                tabs.forEach(t => {
-                    const el = document.getElementById(`tab-content-${t}`);
-                    if (el) {
-                        if (t === tab) {
-                            el.classList.remove('hidden');
-                            setTimeout(() => {
-                                el.classList.remove('fade-out');
-                            }, 50);
-                        } else {
-                            el.classList.add('hidden', 'fade-out');
-                        }
-                    }
-                });
-
-                currentTab = tab;
-
-                if (tab === 'dashboard') {
-                    closeStaffClickedTaskList();
-                    renderDashboard();
-                }
-                if (tab === 'profile-settings') {
-                    loadProfileSettings();
-                }
-                if (tab === 'tasks') renderTasks();
-                if (tab === 'schedule') {
-                    const dp = document.getElementById('schedule-date-picker');
-                    if (dp && !dp.value) dp.value = new Date().toISOString().split('T')[0];
-                    renderSchedule();
-                }
-                if (tab === 'shift-swap') renderSwapRequests();
-                if (tab === 'notifications') renderNotificationsList();
-                if (tab === 'users') renderUsers();
-                if (tab === 'logs') renderLogs();
-
-            }, 300);
+            currentTab = tab;
+            ['dashboard', 'profile-settings', 'tasks', 'schedule', 'shift-swap', 'notifications', 'users', 'logs'].forEach(t => {
+                const el = document.getElementById(`tab-content-${t}`);
+                if (el) el.classList.toggle('hidden', t !== tab);
+            });
+            if (tab === 'tasks') renderTasks();
+            if (tab === 'dashboard') renderDashboard();
         }
 
         function exportDataExcel() {
-            let csv = "\uFEFFID,Tiêu đề,Ưu tiên,Trạng thái,Tiến độ (%),Ngày bắt đầu,Deadline\n";
-            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.priority || 'Normal'},${t.status},${t.progress || 0},${t.startDate || ''},${t.deadline || ''}\n`);
+            let csv = "\uFEFFID,Tiêu đề,Trạng thái,Tiến độ (%)\n";
+            cloudTasks.forEach(t => csv += `${t.id},"${t.title}",${t.status},${t.progress || 0}\n`);
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
             a.download = `Bao_Cao_${new Date().toISOString().split('T')[0]}.csv`;
             a.click();
-            showToast('Đã xuất báo cáo CSV!');
+            showToast('Xuất báo cáo thành công!');
         }
 
         function escapeHtml(str) {
-            return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+            return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace font-bold (/>/g, "&gt;") : '';
         }
     </script>
 </body>
