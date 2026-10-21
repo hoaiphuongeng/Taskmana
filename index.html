@@ -720,84 +720,74 @@
         let taskFutureViewMode = 'all';
         let activeTaskStatusTab = 'ALL'; // Trạng tháiTab lọc: ALL, Chưa Thực Hiện, Đang Thực Hiện, Quá Hạn, Đã Hoàn Thành
 
-        window.addEventListener('DOMContentLoaded', () => {
+       window.addEventListener('DOMContentLoaded', () => {
             initOptimizedListeners();
-            checkAuth();
-            setInterval(() => {
-                const el = document.getElementById('current-time-display');
-                if (el) el.innerText = new Date().toLocaleString('vi-VN');
-            }, 1000);
+            setInterval(updateClock, 1000);
+            updateClock();
 
             const searchInput = document.getElementById('task-search');
             if (searchInput) {
-                searchInput.oninput = debounce(() => renderTasks(), 250);
+                searchInput.oninput = debounce(() => renderTasks(), 300);
             }
-            setTimeout(hideLoading, 800);
+            setTimeout(hideLoading, 1200);
         });
 
-        function hideLoading() {
-            const loader = document.getElementById('global-loading');
-            if (loader) {
-                loader.style.opacity = '0';
-                setTimeout(() => loader.style.display = 'none', 300);
-            }
-        }
-
-        function showToast(msg, isError = false) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `pointer-events-auto px-4 py-3 rounded-2xl text-white shadow-xl text-xs sm:text-sm font-bold transition-all duration-300 backdrop-blur-md ${isError ? 'bg-rose-600/90' : 'bg-emerald-600/90'}`;
-            toast.innerText = msg;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.style.opacity = '0';
-                toast.style.transform = 'translateY(-10px)';
-                setTimeout(() => toast.remove(), 300);
-            }, 3000);
-        }
-
-        function toggleMobileSidebar(isOpen) {
-            const sidebar = document.getElementById('mobile-sidebar');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (!sidebar || !backdrop) return;
-            if (isOpen) {
-                sidebar.classList.remove('-translate-x-full');
-                backdrop.classList.remove('hidden');
-            } else {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-            }
-        }
-
-        // Tối ưu Listeners Real-time đồng bộ Cloud
+        // Tối ưu lắng nghe dữ liệu và kiểm tra xác thực ngay khi có dữ liệu users
         function initOptimizedListeners() {
             db.collection('users').onSnapshot(snapshot => {
                 cloudUsers = [];
                 snapshot.forEach(doc => cloudUsers.push({ id: doc.id, ...doc.data() }));
-                populateAssigneesSelect();
+                
+                // Nếu Firestore trống, khởi tạo mặc định ngay lập tức
+                if (cloudUsers.length === 0) {
+                    defaultUsers.forEach(u => db.collection('users').doc(u.id).set(u));
+                    cloudUsers = [...defaultUsers];
+                }
+                
+                populateAssignees();
+                renderUsers();
+                
+                // Tiến hành kiểm tra đăng nhập sau khi đã tải xong dữ liệu người dùng từ Cloud
+                checkAuth();
+            }, err => {
+                console.error("Lỗi tải dữ liệu users:", err);
+                // Fallback dùng dữ liệu mặc định nếu lỗi mạng
+                cloudUsers = [...defaultUsers];
+                checkAuth();
             });
 
-            db.collection('tasks').orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+            db.collection('tasks').orderBy('createdAt', 'desc').limit(100).onSnapshot(snapshot => {
                 cloudTasks = [];
                 snapshot.forEach(doc => cloudTasks.push({ id: doc.id, ...doc.data() }));
-                updateTaskCounts();
                 renderTasks();
                 renderDashboard();
-            });
+            }, err => {});
 
             db.collection('schedules').onSnapshot(snapshot => {
                 cloudSchedules = {};
                 snapshot.forEach(doc => { cloudSchedules[doc.id] = doc.data(); });
-                if (currentTab === 'schedule') renderSchedule();
-            });
-        }
+                renderSchedule();
+            }, err => {});
 
-        function debounce(func, wait) {
-            let timeout;
-            return function(...args) {
-                clearTimeout(timeout);
-                timeout = setTimeout(() => func.apply(this, args), wait);
-            };
+            db.collection('shiftSwaps').onSnapshot(snapshot => {
+                cloudSwapRequests = [];
+                snapshot.forEach(doc => { cloudSwapRequests.push({ id: doc.id, ...doc.data() }); });
+                renderSwapRequests();
+                renderShiftSwapBadge();
+            }, err => {});
+
+            db.collection('notifications').onSnapshot(snapshot => {
+                cloudNotifications = [];
+                snapshot.forEach(doc => { cloudNotifications.push({ id: doc.id, ...doc.data() }); });
+                renderNotificationsBadge();
+                renderNotificationsList();
+            }, err => {});
+
+            db.collection('logs').limit(50).onSnapshot(snapshot => {
+                cloudLogs = [];
+                snapshot.forEach(doc => cloudLogs.push({ id: doc.id, ...doc.data() }));
+                renderLogs();
+            }, err => {});
         }
 
         function checkAuth() {
@@ -805,41 +795,74 @@
             const viewAuth = document.getElementById('view-auth');
             const viewMain = document.getElementById('view-main');
 
+            if (!viewAuth || !viewMain) return;
+
             if (saved) {
-                currentUser = JSON.parse(saved);
-                viewAuth.classList.add('hidden');
-                viewMain.classList.remove('hidden');
+                try {
+                    currentUser = JSON.parse(saved);
+                    // Kiểm tra xem user trong LocalStorage có tồn tại trên cloudUsers không
+                    let existUser = cloudUsers.find(u => u.id === currentUser.id);
+                    
+                    if (currentUser.id !== 'shp') {
+                        if (!existUser || existUser.status === 'INACTIVE') {
+                            handleLogout();
+                            return;
+                        }
+                    }
 
-                document.getElementById('user-name-disp').innerText = currentUser.name;
-                document.getElementById('user-role-badge').innerText = currentUser.role;
+                    viewAuth.classList.add('hidden');
+                    viewMain.classList.remove('hidden');
+                    updateUserSidebarUI();
 
-                const isAdmin = (currentUser.role === 'ADMIN' || currentUser.id === 'shp');
-                document.querySelectorAll('.admin-only').forEach(el => el.classList.toggle('hidden', !isAdmin));
+                    const isSuperAdminOrAdmin = (currentUser.id === 'shp' || currentUser.role === 'ADMIN' || currentUser.role === 'SUPER_ADMIN');
 
-                switchTab('dashboard');
-            } else {
-                viewAuth.classList.remove('hidden');
-                viewMain.classList.add('hidden');
+                    document.querySelectorAll('.admin-only').forEach(el => {
+                        el.classList.toggle('hidden', !isSuperAdminOrAdmin);
+                    });
+
+                    const adminDash = document.getElementById('admin-advanced-dashboard');
+                    if (adminDash) {
+                        adminDash.classList.toggle('hidden', !isSuperAdminOrAdmin);
+                    }
+
+                    if (currentTab === 'dashboard') switchTab('dashboard');
+                    renderNotificationsBadge();
+                    renderShiftSwapBadge();
+                    return;
+                } catch (err) {
+                    localStorage.removeItem(STORAGE_KEY);
+                }
             }
+            
+            // Nếu chưa đăng nhập hoặc token không hợp lệ -> Hiển thị màn hình Login
+            viewAuth.classList.remove('hidden');
+            viewMain.classList.add('hidden');
         }
 
         function handleLogin(e) {
-            e.preventDefault();
+            if (e) e.preventDefault();
             const phone = document.getElementById('login-phone').value.trim();
             const pass = document.getElementById('login-password').value;
 
+            // Tìm trong cloudUsers hoặc danh sách defaultUsers dự phòng
             let user = cloudUsers.find(u => (u.phone === phone || u.id === phone) && u.password === pass);
-            if (!user && phone === 'shp' && pass === '123') {
-                user = { id: 'shp', name: 'Sơn Hoài Phương', role: 'ADMIN', phone: 'shp' };
+            if (!user) {
+                user = defaultUsers.find(u => (u.phone === phone || u.id === phone) && u.password === pass);
             }
 
             if (!user) {
-                showToast('Thông tin đăng nhập không hợp lệ!', true);
+                showToast('Số điện thoại hoặc mật khẩu không chính xác!', true);
+                return;
+            }
+
+            if (user.status === 'INACTIVE') {
+                showToast('Tài khoản này đã bị khóa!', true);
                 return;
             }
 
             currentUser = user;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(currentUser));
+            addLog(`Đăng nhập hệ thống`);
             showToast(`Chào mừng ${user.name}!`);
             checkAuth();
         }
