@@ -322,7 +322,7 @@
                             </div>
                         </div>
 
-                        <!-- THỨ TỰ THẺ DASHBOARD: Chưa làm, Đang làm, Quá hạn, Tổng việc, Hoàn Thành, Tỷ lệ hoàn thành -->
+                        <!-- THỨ TỰ THẺ DASHBOARD -->
                         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
                             <div onclick="handleStatCardClick('todo')" class="ios-card p-4 sm:p-5 flex items-center justify-between clickable-stat bg-slate-50/80">
                                 <div>
@@ -381,7 +381,6 @@
                         </div>
 
                         <div id="admin-advanced-dashboard" class="space-y-4 sm:space-y-6 admin-only hidden">
-                            <!-- ĐÃ XOÁ BIỂU ĐỒ XU HƯỚNG VÀ TẢI CÔNG VIỆC THEO YÊU CẦU, GIỮ LẠI BIỂU ĐỒ PHÂN BỐ TRẠNG THÁI -->
                             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                                 <div class="ios-card p-4 sm:p-6">
                                     <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
@@ -413,7 +412,6 @@
                                 </div>
                             </div>
 
-                            <!-- BẢNG TOP NHÂN SỰ & CẢNH BÁO ĐÃ ĐƯỢC MỞ RỘNG THÊM ĐẦY ĐỦ CÁC CỘT TRẠNG THÁI VÀ TỶ LỆ HOÀN THÀNH -->
                             <div class="grid grid-cols-1 gap-4 sm:gap-6">
                                 <div class="ios-card p-4 sm:p-6">
                                     <h3 class="text-sm font-bold text-slate-900 mb-4 flex items-center space-x-2">
@@ -1026,7 +1024,52 @@
         let currentTaskStatusFilter = 'all'; 
         let selectedAssigneeId = '';
         let currentTab = 'dashboard';
-        let isInitialLoadDone = false; // Biến kiểm tra lượt tải đầu tiên để không bắn pop-up lịch sử cũ
+        let isInitialLoadDone = false; 
+
+        // Khởi tạo luồng Âm thanh Web Audio API (Tone chuông đôi chuẩn iOS)
+        let audioCtx = null;
+        function playIPhoneNotificationSound() {
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const playNote = (freq, startTime, duration) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, startTime);
+
+                    gain.gain.setValueAtTime(0.3, startTime);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                const now = audioCtx.currentTime;
+                // Chuông đôi (Double tone) trong trẻo chuẩn iOS
+                playNote(1046.50, now, 0.15);       // Nốt C6
+                playNote(1318.51, now + 0.12, 0.3); // Nốt E6
+            } catch (err) {
+                console.log("Audio play error:", err);
+            }
+        }
+
+        // Tự động giải phóng AudioContext khi có tương tác đầu tiên của người dùng
+        window.addEventListener('click', () => {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            } else if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }, { once: true });
 
         const defaultUsers = [
             { id: 'shp', name: 'Sơn Hoài Phương', phone: 'shp', password: '123', role: 'ADMIN', status: 'ACTIVE', email: 'shp@company.com', nickname: 'SuperAdmin', avatar: '', order: 0 },
@@ -1072,7 +1115,7 @@
 
             setTimeout(() => {
                 hideLoading();
-                isInitialLoadDone = true; // Kích hoạt cho phép hiện toast pop-up realtime sau khi load xong lần đầu
+                isInitialLoadDone = true; 
             }, 1500);
         });
 
@@ -1103,8 +1146,11 @@
             if (el) el.innerText = new Date().toLocaleString('vi-VN');
         }
 
-        // HÀM HIỂN THỊ IN-APP TOAST BANNER NỔI GÓC PHẢI (GIỐNG ỨNG DỤNG CHAT)
+        // HIỂN THỊ IN-APP TOAST BANNER NỔI GÓC PHẢI + PHÁT ÂM THANH IPHONE
         function showToast(msg, isError = false) {
+            // Phát âm thanh thông báo iPhone
+            playIPhoneNotificationSound();
+
             const container = document.getElementById('toast-container');
             if (!container) return;
 
@@ -1125,7 +1171,6 @@
 
             container.appendChild(toast);
 
-            // Tự động ẩn sau 4 giây với hiệu ứng trượt ra
             setTimeout(() => {
                 toast.classList.remove('toast-slide-in');
                 toast.classList.add('toast-slide-out');
@@ -1198,7 +1243,6 @@
                 snapshot.docChanges().forEach(change => {
                     let taskData = { id: change.doc.id, ...change.doc.data() };
                     if (!firstLoad && isInitialLoadDone && currentUser) {
-                        // Bật Toast nổi khi có công việc mới được tạo hoặc cập nhật thời gian thực
                         if (change.type === 'added') {
                             showToast(`Mới: Có công việc "${taskData.title}" được tạo!`);
                         } else if (change.type === 'modified') {
@@ -1230,7 +1274,6 @@
                 snapshot.docChanges().forEach(change => {
                     let notif = change.doc.data();
                     if (isInitialLoadDone && change.type === 'added' && currentUser && notif.userId === currentUser.id) {
-                        // Hiển thị Toast nổi góc phải cho thông báo đích danh user hiện tại
                         showToast(notif.title + ": " + notif.message);
                     }
                 });
